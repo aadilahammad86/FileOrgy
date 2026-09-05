@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FileOrgy.App/FileOrgy.App.csproj" />
+    <Project Path="src/FileOrgy.Core/FileOrgy.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileOrgy.Tests/FileOrgy.Tests.csproj" />
+  </Folder>
+</Solution>

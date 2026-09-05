@@ -1,0 +1,541 @@
+<Window x:Class="FileOrgy.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:FileOrgy.App.Converters"
+        mc:Ignorable="d"
+        Title="FileOrgy - Lightweight Real-Time Folder Automation &amp; Organization"
+        Height="780" Width="1200"
+        MinHeight="650" MinWidth="950"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A"
+        Foreground="#F8FAFC"
+        FontFamily="Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrush"/>
+        <converters:LogLevelToBrushConverter x:Key="LogLevelToBrush"/>
+
+        <!-- Custom Dark ScrollBar -->
+        <Style TargetType="{x:Type ScrollViewer}">
+            <Setter Property="OverridesDefaultStyle" Value="False"/>
+        </Style>
+
+        <!-- Modern Button Style -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#6366F1"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#4F46E5"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#334155"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Sidebar Nav Button -->
+        <Style x:Key="NavButtonStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="navBorder" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="navBorder" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="navBorder" Property="Background" Value="#312E81"/>
+                                <Setter Property="Foreground" Value="#A5B4FC"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT SIDEBAR -->
+        <Border Grid.Column="0" Background="#0B1120" BorderBrush="#1E293B" BorderThickness="0,0,1,0" Padding="16,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Brand / Logo -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,24">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#6366F1" CornerRadius="6" Width="30" Height="30" Margin="0,0,10,0">
+                            <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="FileOrgy" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Zero-Resource Automation" FontSize="11" Foreground="#64748B" Margin="40,2,0,0"/>
+                </StackPanel>
+
+                <!-- Navigation Tabs -->
+                <StackPanel Grid.Row="1">
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📊  Dashboard" IsChecked="{Binding IsDashboardTab}" Command="{Binding NavigateCommand}" CommandParameter="Dashboard"/>
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📁  Watch Folders" IsChecked="{Binding IsWatchFoldersTab}" Command="{Binding NavigateCommand}" CommandParameter="WatchFolders"/>
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="⚡  Rules &amp; Workflows" IsChecked="{Binding IsRulesTab}" Command="{Binding NavigateCommand}" CommandParameter="Rules"/>
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="🏷️  Variables &amp; Lists" IsChecked="{Binding IsVariablesTab}" Command="{Binding NavigateCommand}" CommandParameter="Variables"/>
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📜  Activity History" IsChecked="{Binding IsLogsTab}" Command="{Binding NavigateCommand}" CommandParameter="Logs"/>
+                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="⚙️  Settings" IsChecked="{Binding IsSettingsTab}" Command="{Binding NavigateCommand}" CommandParameter="Settings"/>
+                </StackPanel>
+
+                <!-- Sidebar Footer Status Card -->
+                <Border Grid.Row="2" Background="#1E293B" CornerRadius="8" Padding="12" BorderBrush="#334155" BorderThickness="1">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse Width="8" Height="8" Fill="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToStatusBrush}}" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding DashboardVM.StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="#E2E8F0"/>
+                        </StackPanel>
+                        <TextBlock Text="CPU: 0.0%  •  RAM: ~20MB" FontSize="10" Foreground="#64748B" Margin="16,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- RIGHT CONTENT AREA -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Header Bar -->
+            <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="24,0">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Automated File Management" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC"/>
+                        <TextBlock Text="Real-time directory monitoring and dynamic rule execution" FontSize="12" Foreground="#64748B"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToVis}, ConverterParameter=invert, FallbackValue='Pause'}"
+                                Command="{Binding DashboardVM.ToggleMonitoringCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"/>
+                        <Button Content="⚡ Scan Folder Now..." Command="{Binding DashboardVM.ScanFolderNowCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Main Content Panels -->
+            <Grid Grid.Row="1" Margin="24">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <Grid Visibility="{Binding IsDashboardTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding DashboardVM}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- KPI Cards Row -->
+                    <Grid Grid.Row="0" Margin="0,0,0,24">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card 1: Total Processed -->
+                        <Border Grid.Column="0" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Total Files Processed" FontSize="12" Foreground="#94A3B8"/>
+                                <TextBlock Text="{Binding TotalFilesProcessed}" FontSize="28" FontWeight="Bold" Foreground="#818CF8" Margin="0,4,0,0"/>
+                                <TextBlock Text="Since startup" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Today -->
+                        <Border Grid.Column="2" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Operations Today" FontSize="12" Foreground="#94A3B8"/>
+                                <TextBlock Text="{Binding OperationsToday}" FontSize="28" FontWeight="Bold" Foreground="#38BDF8" Margin="0,4,0,0"/>
+                                <TextBlock Text="Automated events" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Watch Folders -->
+                        <Border Grid.Column="4" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Active Watch Folders" FontSize="12" Foreground="#94A3B8"/>
+                                <TextBlock Text="{Binding ActiveFoldersCount}" FontSize="28" FontWeight="Bold" Foreground="#34D399" Margin="0,4,0,0"/>
+                                <TextBlock Text="Instant kernel hooks" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Space Saved -->
+                        <Border Grid.Column="6" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Cleaned / Saved Space" FontSize="12" Foreground="#94A3B8"/>
+                                <TextBlock Text="{Binding StorageSavedText}" FontSize="28" FontWeight="Bold" Foreground="#FBBF24" Margin="0,4,0,0"/>
+                                <TextBlock Text="Safe Recycle Bin undo" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Real-Time Activity Stream -->
+                    <Border Grid.Row="1" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                <TextBlock Text="Real-Time Operation Feed" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                                <Button Content="Clear History" Command="{Binding ClearActivityCommand}" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding RecentActivity}" AutoGenerateColumns="False" IsReadOnly="True"
+                                      Background="#0F172A" BorderBrush="#334155" HeadersVisibility="Column"
+                                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#1E293B"
+                                      RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="80"/>
+                                    <DataGridTemplateColumn Header="Level" Width="90">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                                    <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Event" Binding="{Binding EventType}" Width="120"/>
+                                    <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="140"/>
+                                    <DataGridTextColumn Header="Details / Message" Binding="{Binding Details}" Width="*"/>
+                                    <DataGridTextColumn Header="Duration" Binding="{Binding DurationMs, StringFormat={}{0}ms}" Width="75"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- 2. WATCH FOLDERS VIEW -->
+                <Grid Visibility="{Binding IsWatchFoldersTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding WatchFoldersVM}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <TextBlock Text="Monitored Directories" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="⚡ Scan Selected" Command="{Binding ScanFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="🗑 Remove Folder" Command="{Binding RemoveFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="+ Add Watch Folder" Command="{Binding AddFolderCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="SemiBold" Foreground="#F8FAFC"/>
+                                                <Border Background="#312E81" CornerRadius="4" Padding="6,2" Margin="10,0,0,0">
+                                                    <TextBlock Text="{Binding DebounceDelayMs, StringFormat={}Debounce: {0}ms}" FontSize="10" Foreground="#A5B4FC"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding FolderPath}" FontSize="12" Foreground="#94A3B8" Margin="0,3,0,6"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox Content="Include Subdirectories" IsChecked="{Binding IncludeSubdirectories}" Foreground="#94A3B8" Margin="0,0,16,0"/>
+                                                <TextBlock Text="{Binding IgnorePatternsText, StringFormat={}Ignored: {0}}" FontSize="11" Foreground="#64748B"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+                <!-- 3. RULES & WORKFLOWS VIEW -->
+                <Grid Visibility="{Binding IsRulesTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding RulesVM}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <TextBlock Text="Automation Rules &amp; Multi-Step Workflows" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="▲ Move Up" Command="{Binding MoveUpCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="▼ Move Down" Command="{Binding MoveDownCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="📋 Duplicate" Command="{Binding DuplicateRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="✏️ Edit Rule" Command="{Binding EditRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                            <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Rules}" SelectedItem="{Binding SelectedRule}"
+                             Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Priority Badge -->
+                                        <Border Grid.Column="0" Background="#312E81" CornerRadius="6" Width="28" Height="28" Margin="0,0,14,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Priority}" FontSize="12" FontWeight="Bold" Foreground="#A5B4FC" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#F8FAFC"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,6"/>
+                                            <Border Background="#0F172A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="#38BDF8"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+                <!-- 4. VARIABLES & LISTS VIEW -->
+                <Grid Visibility="{Binding IsVariablesTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding VariablesVM}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="1.2*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: Custom Variables -->
+                    <Border Grid.Column="0" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                <TextBlock Text="Custom Variables" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="🗑 Remove" Command="{Binding RemoveVariableCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                                    <Button Content="+ Add Variable" Command="{Binding AddVariableCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedVariable}"
+                                      AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155"
+                                      RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Variable Key ({var:Key})" Binding="{Binding Key}" Width="160"/>
+                                    <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right: Reusable Keyword Lists -->
+                    <Border Grid.Column="2" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                <TextBlock Text="Reusable Keyword Lists" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="🗑 Remove" Command="{Binding RemoveKeywordListCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                                    <Button Content="+ Add Keyword List" Command="{Binding AddKeywordListCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <DataGrid Grid.Row="1" ItemsSource="{Binding KeywordLists}" SelectedItem="{Binding SelectedKeywordList}"
+                                      AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155"
+                                      RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="List Name" Binding="{Binding Name}" Width="140"/>
+                                    <DataGridTextColumn Header="Keywords (comma separated)" Binding="{Binding KeywordsText}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- 5. ACTIVITY LOGS VIEW -->
+                <Grid Visibility="{Binding IsLogsTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding LogsVM}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter Bar -->
+                    <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="12" Margin="0,0,0,14" BorderBrush="#334155" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Margin="0,0,10,0"/>
+
+                            <ComboBox Grid.Column="1" SelectedValue="{Binding SelectedLevelFilter, Mode=TwoWay}" SelectedValuePath="Content"
+                                      Background="#0F172A" Foreground="#111827" Margin="0,0,10,0">
+                                <ComboBoxItem Content="All"/>
+                                <ComboBoxItem Content="Success"/>
+                                <ComboBoxItem Content="Error"/>
+                                <ComboBoxItem Content="Warning"/>
+                                <ComboBoxItem Content="Info"/>
+                            </ComboBox>
+
+                            <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                                <Button Content="Export JSON" Command="{Binding ExportJsonCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
+                                <Button Content="Clear Logs" Command="{Binding ClearLogsCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Logs Table -->
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Logs}" SelectedItem="{Binding SelectedLog}"
+                              AutoGenerateColumns="False" IsReadOnly="True" Background="#0F172A" BorderBrush="#334155"
+                              RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu Background="#1E293B" Foreground="#F8FAFC">
+                                <MenuItem Header="Open Source in Explorer" Command="{Binding OpenSourceInExplorerCommand}"/>
+                                <MenuItem Header="Open Destination in Explorer" Command="{Binding OpenDestInExplorerCommand}"/>
+                                <MenuItem Header="Copy File Path" Command="{Binding CopyPathCommand}"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="135"/>
+                            <DataGridTemplateColumn Header="Status" Width="85">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Event Type" Binding="{Binding EventType}" Width="110"/>
+                            <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="130"/>
+                            <DataGridTextColumn Header="Source" Binding="{Binding SourcePath}" Width="160"/>
+                            <DataGridTextColumn Header="Destination" Binding="{Binding DestinationPath}" Width="160"/>
+                            <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <!-- 6. SETTINGS VIEW -->
+                <Grid Visibility="{Binding IsSettingsTab, Converter={StaticResource BoolToVis}}" DataContext="{Binding SettingsVM}">
+                    <Border Background="#1E293B" CornerRadius="10" Padding="24" BorderBrush="#334155" BorderThickness="1" MaxWidth="700" HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Application Settings &amp; Resource Optimization" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" Margin="0,0,0,16"/>
+
+                            <CheckBox Content="Launch FileOrgy on Windows Startup (in system tray)" IsChecked="{Binding StartWithWindows}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
+                            <CheckBox Content="Minimize to System Tray when closing window" IsChecked="{Binding MinimizeToTrayOnClose}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
+                            <CheckBox Content="Show desktop balloon notifications on file operations" IsChecked="{Binding ShowDesktopNotifications}" Foreground="#F8FAFC" Margin="0,0,0,20"/>
+
+                            <TextBlock Text="Global Debounce Delay (ms)" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
+                            <TextBlock Text="Prevents reading files while still copying or downloading." FontSize="11" Foreground="#64748B" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding GlobalDebounceDelayMs, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Max Concurrent Worker Threads" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
+                            <TextBlock Text="Limits background concurrency to keep CPU usage near zero." FontSize="11" Foreground="#64748B" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding MaxConcurrentOperations, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+
+                            <TextBlock Text="Log Retention Days" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
