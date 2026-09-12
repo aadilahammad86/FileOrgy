@@ -166,6 +166,12 @@ namespace FileOrgy.Core.Services
                 string dir = context.DirectoryPath;
                 return string.IsNullOrEmpty(dir) ? string.Empty : Path.GetFileName(dir);
             }
+            if (token.Equals("directory", StringComparison.OrdinalIgnoreCase) ||
+                token.Equals("dir", StringComparison.OrdinalIgnoreCase) ||
+                token.Equals("folder", StringComparison.OrdinalIgnoreCase))
+            {
+                return context.DirectoryPath;
+            }
 
             // 7. Check if token directly matches a stored variable
             var directVar = context.GetVariable(token);

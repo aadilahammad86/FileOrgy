@@ -182,6 +182,19 @@ namespace FileOrgy.App.ViewModels
             }
         }
 
+        public CaseTransform CaseTransform
+        {
+            get => _step.CaseTransform;
+            set
+            {
+                if (_step.CaseTransform != value)
+                {
+                    _step.CaseTransform = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public ArchiveExtractDestination ExtractDestination
         {
             get => _step.ExtractDestination;
@@ -408,8 +421,22 @@ namespace FileOrgy.App.ViewModels
                 {
                     _rule.MatchLogic = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsMatchAll));
+                    OnPropertyChanged(nameof(IsMatchAny));
                 }
             }
+        }
+
+        public bool IsMatchAll
+        {
+            get => MatchLogic == ConditionMatchLogic.All;
+            set { if (value) MatchLogic = ConditionMatchLogic.All; }
+        }
+
+        public bool IsMatchAny
+        {
+            get => MatchLogic == ConditionMatchLogic.Any;
+            set { if (value) MatchLogic = ConditionMatchLogic.Any; }
         }
 
         public ObservableCollection<RuleConditionItemViewModel> Conditions { get; } = new();
@@ -455,9 +482,9 @@ namespace FileOrgy.App.ViewModels
             SelectedStep = Steps.FirstOrDefault();
 
             AddConditionCommand = new RelayCommand(AddCondition);
-            RemoveConditionCommand = new RelayCommand(RemoveCondition, () => SelectedCondition != null);
+            RemoveConditionCommand = new RelayCommand(p => RemoveCondition(p as RuleConditionItemViewModel));
             AddStepCommand = new RelayCommand(AddStep);
-            RemoveStepCommand = new RelayCommand(RemoveStep, () => SelectedStep != null);
+            RemoveStepCommand = new RelayCommand(p => RemoveStep(p as WorkflowStepItemViewModel));
             MoveStepUpCommand = new RelayCommand(MoveStepUp, () => SelectedStep != null && Steps.IndexOf(SelectedStep) > 0);
             MoveStepDownCommand = new RelayCommand(MoveStepDown, () => SelectedStep != null && Steps.IndexOf(SelectedStep) < Steps.Count - 1);
         }
@@ -476,11 +503,12 @@ namespace FileOrgy.App.ViewModels
             SelectedCondition = vm;
         }
 
-        private void RemoveCondition()
+        private void RemoveCondition(RuleConditionItemViewModel? condition = null)
         {
-            if (SelectedCondition == null) return;
-            _rule.Conditions.Remove(SelectedCondition.Model);
-            Conditions.Remove(SelectedCondition);
+            var target = condition ?? SelectedCondition;
+            if (target == null) return;
+            _rule.Conditions.Remove(target.Model);
+            Conditions.Remove(target);
             SelectedCondition = Conditions.FirstOrDefault();
         }
 
@@ -489,8 +517,8 @@ namespace FileOrgy.App.ViewModels
             var newStep = new WorkflowStep
             {
                 StepType = StepType.SmartRename,
-                Name = "Smart Rename",
-                RenamePattern = "{doc_date:yyyy-MM-dd}_{basename}{dotext}"
+                Name = "Rename File",
+                RenamePattern = "{basename}{dotext}"
             };
             _rule.Steps.Add(newStep);
             var vm = new WorkflowStepItemViewModel(newStep);
@@ -498,11 +526,12 @@ namespace FileOrgy.App.ViewModels
             SelectedStep = vm;
         }
 
-        private void RemoveStep()
+        private void RemoveStep(WorkflowStepItemViewModel? step = null)
         {
-            if (SelectedStep == null) return;
-            _rule.Steps.Remove(SelectedStep.Model);
-            Steps.Remove(SelectedStep);
+            var target = step ?? SelectedStep;
+            if (target == null) return;
+            _rule.Steps.Remove(target.Model);
+            Steps.Remove(target);
             SelectedStep = Steps.FirstOrDefault();
         }
 

@@ -211,7 +211,7 @@ namespace FileOrgy.Core.Services
                         Name = "Extract Archive",
                         ExtractDestination = ArchiveExtractDestination.SubfolderNamedAfterArchive,
                         ArchivePostAction = ArchivePostAction.RecycleArchive,
-                        EnqueueExtractedFiles = true
+                        EnqueueExtractedFiles = false
                     }
                 }
             };
@@ -251,16 +251,292 @@ namespace FileOrgy.Core.Services
             };
             config.Rules.Add(photoRule);
 
+            EnsureInPlaceKeywordLists(config);
+
             return config;
         }
 
-        private static void EnsureDefaultListsAndVariables(AppConfiguration config)
+        public static void EnsureDefaultListsAndVariables(AppConfiguration config)
         {
             config.CustomVariables ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             config.KeywordLists ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             config.WatchFolders ??= new List<WatchFolderConfig>();
             config.Rules ??= new List<Rule>();
             config.Settings ??= new AppSettings();
+
+            EnsureInPlaceKeywordLists(config);
         }
+
+        public static void EnsureInPlaceKeywordLists(AppConfiguration config)
+        {
+            config.KeywordLists ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+            if (!config.KeywordLists.ContainsKey("ProgramExts"))
+            {
+                config.KeywordLists["ProgramExts"] = new List<string> { "exe", "msi", "dmg" };
+            }
+
+            if (!config.KeywordLists.ContainsKey("DocumentExts"))
+            {
+                config.KeywordLists["DocumentExts"] = new List<string>
+                {
+                    "pdf", "docx", "doc", "xlsx", "xls", "csv", "tsv", "txt", "md", "html", "rtf", "pptx"
+                };
+            }
+            else
+            {
+                var docExts = config.KeywordLists["DocumentExts"];
+                var required = new[] { "pdf", "docx", "doc", "xlsx", "xls", "csv", "tsv", "txt", "md", "html", "rtf", "pptx" };
+                foreach (var ext in required)
+                {
+                    if (!docExts.Contains(ext, StringComparer.OrdinalIgnoreCase)) docExts.Add(ext);
+                }
+            }
+
+            if (!config.KeywordLists.ContainsKey("ArchiveExts"))
+            {
+                config.KeywordLists["ArchiveExts"] = new List<string> { "zip", "rar", "7z", "tar", "gz", "bz2", "tgz" };
+            }
+            else
+            {
+                var archExts = config.KeywordLists["ArchiveExts"];
+                var required = new[] { "zip", "rar", "7z", "tar", "gz", "bz2", "tgz" };
+                foreach (var ext in required)
+                {
+                    if (!archExts.Contains(ext, StringComparer.OrdinalIgnoreCase)) archExts.Add(ext);
+                }
+            }
+
+            if (!config.KeywordLists.ContainsKey("PictureExts"))
+            {
+                config.KeywordLists["PictureExts"] = new List<string> { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "psd" };
+            }
+
+            if (!config.KeywordLists.ContainsKey("VideoExts"))
+            {
+                config.KeywordLists["VideoExts"] = new List<string> { "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm" };
+            }
+
+            if (!config.KeywordLists.ContainsKey("AudioExts"))
+            {
+                config.KeywordLists["AudioExts"] = new List<string> { "mp3", "wav", "flac", "aac", "ogg", "m4a", "wma" };
+            }
+        }
+
+        public static List<Rule> GetInPlaceOrganizationPresets()
+        {
+            return new List<Rule>
+            {
+                new Rule
+                {
+                    Id = "rule-inplace-programs",
+                    Name = "In-Place: Programs & Installers",
+                    Description = "Organizes software installers and executables into a Programs folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 10,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "ProgramExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Programs Folder",
+                            DestinationTemplate = @"{directory}\Programs",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                },
+                new Rule
+                {
+                    Id = "rule-inplace-documents",
+                    Name = "In-Place: Documents & Tables",
+                    Description = "Organizes PDFs, spreadsheets, Word docs, and text into a Documents folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 11,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "DocumentExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Documents Folder",
+                            DestinationTemplate = @"{directory}\Documents",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                },
+                new Rule
+                {
+                    Id = "rule-inplace-compressed",
+                    Name = "In-Place: Compressed Archives",
+                    Description = "Organizes ZIP, RAR, 7Z, and tar archives into a Compressed folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 12,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "ArchiveExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Compressed Folder",
+                            DestinationTemplate = @"{directory}\Compressed",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                },
+                new Rule
+                {
+                    Id = "rule-inplace-pictures",
+                    Name = "In-Place: Pictures & Graphics",
+                    Description = "Organizes images and photos into a Pictures folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 13,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "PictureExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Pictures Folder",
+                            DestinationTemplate = @"{directory}\Pictures",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                },
+                new Rule
+                {
+                    Id = "rule-inplace-videos",
+                    Name = "In-Place: Videos & Movies",
+                    Description = "Organizes video clips and recordings into a Videos folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 14,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "VideoExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Videos Folder",
+                            DestinationTemplate = @"{directory}\Videos",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                },
+                new Rule
+                {
+                    Id = "rule-inplace-audio",
+                    Name = "In-Place: Audio & Music",
+                    Description = "Organizes songs, sound recordings, and music into an Audio folder directly in the monitored directory",
+                    Enabled = true,
+                    Priority = 15,
+                    StopOnFirstMatch = true,
+                    MatchLogic = ConditionMatchLogic.All,
+                    Conditions = new List<RuleCondition>
+                    {
+                        new RuleCondition
+                        {
+                            Target = RuleTarget.Extension,
+                            Operator = ConditionOperator.InKeywordList,
+                            KeywordListName = "AudioExts"
+                        }
+                    },
+                    Steps = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepType = StepType.MoveFile,
+                            Name = "Move to In-Place Audio Folder",
+                            DestinationTemplate = @"{directory}\Audio",
+                            ConflictResolution = ConflictResolution.AutoRenameUnique
+                        }
+                    }
+                }
+            };
+        }
+
+        public void LoadInPlaceOrganizationPresets(bool overwriteExisting = false)
+        {
+            EnsureInPlaceKeywordLists(CurrentConfig);
+            var presets = GetInPlaceOrganizationPresets();
+
+            if (overwriteExisting)
+            {
+                CurrentConfig.Rules.RemoveAll(r => presets.Any(p => p.Id == r.Id) ||
+                                                  r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase) ||
+                                                  r.Id.StartsWith("preset-inplace-", StringComparison.OrdinalIgnoreCase));
+            }
+
+            int nextPriority = CurrentConfig.Rules.Count > 0 ? CurrentConfig.Rules.Max(r => r.Priority) + 1 : 1;
+            foreach (var preset in presets)
+            {
+                var existing = CurrentConfig.Rules.FirstOrDefault(r => r.Id == preset.Id);
+                if (existing == null)
+                {
+                    preset.Priority = nextPriority++;
+                    CurrentConfig.Rules.Add(preset);
+                }
+            }
+
+            // Cleanly reindex priorities
+            for (int i = 0; i < CurrentConfig.Rules.Count; i++)
+            {
+                CurrentConfig.Rules[i].Priority = i + 1;
+            }
+
+            SaveConfig(CurrentConfig);
+        }
+
+        public static List<Rule> GetInPlacePresetRules() => GetInPlaceOrganizationPresets();
     }
 }
+

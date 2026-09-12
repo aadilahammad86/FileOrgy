@@ -265,5 +265,166 @@ Amount: $1,250.00";
             Assert.True(PathHelper.IsSystemOrProtectedDirectory(sysDir));
             Assert.False(PathHelper.IsSystemOrProtectedDirectory(_testTempDir));
         }
+
+        [Fact]
+        public void WindowsRecycleBin_SendsFileToRecycleBinSuccessfully()
+        {
+            string testFile = Path.Combine(_testTempDir, "recycle_me.txt");
+            File.WriteAllText(testFile, "temporary recycle test content");
+            Assert.True(File.Exists(testFile));
+
+            bool success = WindowsRecycleBin.SendToRecycleBin(testFile);
+            Assert.True(success);
+            Assert.False(File.Exists(testFile));
+        }
+
+        [Fact]
+        public void SmartRenamer_ReplacesDirectoryTokens()
+        {
+            string subDir = Path.Combine(_testTempDir, "WatchedFolder");
+            Directory.CreateDirectory(subDir);
+            string testFile = Path.Combine(subDir, "report.pdf");
+            File.WriteAllText(testFile, "pdf content");
+
+            var context = new WorkflowContext(testFile);
+
+            string dirResult = SmartRenamer.EvaluateTemplate(@"{directory}\Sorted\{filename}", context);
+            string shortDirResult = SmartRenamer.EvaluateTemplate(@"{dir}\Sorted\{filename}", context);
+            string folderResult = SmartRenamer.EvaluateTemplate(@"{folder}\Sorted\{filename}", context);
+
+            string expected = Path.Combine(subDir, "Sorted", "report.pdf");
+            Assert.Equal(expected, dirResult);
+            Assert.Equal(expected, shortDirResult);
+            Assert.Equal(expected, folderResult);
+        }
+
+        [Fact]
+        public void ConfigService_InPlacePresets_LoadsExpectedRulesAndKeywords()
+        {
+            var config = new AppConfiguration();
+            ConfigService.EnsureDefaultListsAndVariables(config);
+            var presets = ConfigService.GetInPlaceOrganizationPresets();
+
+            Assert.True(config.KeywordLists.ContainsKey("ProgramExts"));
+            Assert.True(config.KeywordLists.ContainsKey("DocumentExts"));
+            Assert.True(config.KeywordLists.ContainsKey("ArchiveExts"));
+            Assert.True(config.KeywordLists.ContainsKey("PictureExts"));
+            Assert.True(config.KeywordLists.ContainsKey("VideoExts"));
+            Assert.True(config.KeywordLists.ContainsKey("AudioExts"));
+
+            Assert.Equal(6, presets.Count);
+            Assert.All(presets, rule =>
+            {
+                Assert.Single(rule.Steps);
+                Assert.Equal(StepType.MoveFile, rule.Steps[0].StepType);
+                Assert.Contains("{directory}", rule.Steps[0].DestinationTemplate);
+            });
+        }
+
+        [Fact]
+        public async Task WorkflowEngine_ExecutesInPlaceDirectoryMove()
+        {
+            string watchFolder = Path.Combine(_testTempDir, "InPlaceSource");
+            Directory.CreateDirectory(watchFolder);
+
+            string invoiceFile = Path.Combine(watchFolder, "test_invoice.pdf");
+            File.WriteAllText(invoiceFile, "invoice content");
+
+            var context = new WorkflowContext(invoiceFile);
+
+            var presets = ConfigService.GetInPlaceOrganizationPresets();
+            var docRule = presets.First(r => r.Id == "rule-inplace-documents");
+
+            var result = await WorkflowEngine.ExecuteWorkflowAsync(docRule, context);
+
+            Assert.True(result.IsSuccess);
+            Assert.False(File.Exists(invoiceFile));
+
+            string expectedPath = Path.Combine(watchFolder, "Documents", "test_invoice.pdf");
+            Assert.True(File.Exists(expectedPath));
+        }
+
+        [Fact]
+        public void ConditionEvaluator_MatchesExtensionWithAndWithoutLeadingDot()
+        {
+            string pdfPath = Path.Combine(_testTempDir, "document.pdf");
+            File.WriteAllText(pdfPath, "PDF dummy");
+            var context = new WorkflowContext(pdfPath);
+
+            var condWithDot = new RuleCondition
+            {
+                Target = RuleTarget.Extension,
+                Operator = ConditionOperator.Equals,
+                Value = ".pdf"
+            };
+
+            var condWithoutDot = new RuleCondition
+            {
+                Target = RuleTarget.Extension,
+                Operator = ConditionOperator.Equals,
+                Value = "pdf"
+            };
+
+            var emptyKeywords = new Dictionary<string, List<string>>();
+            var emptyVars = new Dictionary<string, string>();
+
+            Assert.True(ConditionEvaluator.EvaluateCondition(condWithDot, context, emptyKeywords, emptyVars));
+            Assert.True(ConditionEvaluator.EvaluateCondition(condWithoutDot, context, emptyKeywords, emptyVars));
+        }
+
+        [Fact]
+        public void ConditionEvaluator_MatchesKeywordListFromValueProperty()
+        {
+            string exePath = Path.Combine(_testTempDir, "setup.exe");
+            File.WriteAllText(exePath, "dummy");
+            var context = new WorkflowContext(exePath);
+
+            var keywords = new Dictionary<string, List<string>>
+            {
+                ["Installers"] = new List<string> { "exe", "msi" }
+            };
+
+            // Notice KeywordListName is not set, but Value is set to the list name
+            var condition = new RuleCondition
+            {
+                Target = RuleTarget.Extension,
+                Operator = ConditionOperator.InKeywordList,
+                Value = "Installers"
+            };
+
+            Assert.True(ConditionEvaluator.EvaluateCondition(condition, context, keywords, new Dictionary<string, string>()));
+        }
+
+        [Fact]
+        public void ConfigService_LoadInPlacePresets_SupportsOverwriteAndReindexing()
+        {
+            string configPath = Path.Combine(_testTempDir, "custom_config.json");
+            var configService = new ConfigService(configPath);
+
+            configService.CurrentConfig.Rules.Clear();
+
+            configService.LoadInPlaceOrganizationPresets(overwriteExisting: false);
+            Assert.Equal(6, configService.CurrentConfig.Rules.Count);
+
+            // Modify a preset rule
+            configService.CurrentConfig.Rules[0].Name = "Modified In-Place Rule";
+            configService.SaveConfig(configService.CurrentConfig);
+
+            // Load again with overwrite = false -> should retain modification
+            configService.LoadInPlaceOrganizationPresets(overwriteExisting: false);
+            Assert.Equal("Modified In-Place Rule", configService.CurrentConfig.Rules[0].Name);
+
+            // Load with overwrite = true -> should reset back to standard
+            configService.LoadInPlaceOrganizationPresets(overwriteExisting: true);
+            Assert.Equal(6, configService.CurrentConfig.Rules.Count);
+            Assert.NotEqual("Modified In-Place Rule", configService.CurrentConfig.Rules[0].Name);
+
+            // Verify priorities are monotonically increasing from 1 to 6
+            for (int i = 0; i < 6; i++)
+            {
+                Assert.Equal(i + 1, configService.CurrentConfig.Rules[i].Priority);
+            }
+        }
     }
 }
+

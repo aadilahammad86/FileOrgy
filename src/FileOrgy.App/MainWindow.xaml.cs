@@ -61,17 +61,45 @@ namespace FileOrgy.App
             {
                 RestoreWindow();
 
-                var tempConfig = new WatchFolderConfig
+                var existingWf = _orchestrator.ConfigService.CurrentConfig.WatchFolders
+                    .FirstOrDefault(w => string.Equals(w.FolderPath, fbd.SelectedPath, StringComparison.OrdinalIgnoreCase));
+
+                var scanConfig = new WatchFolderConfig
                 {
+                    Id = existingWf?.Id ?? Guid.NewGuid().ToString("N"),
                     FolderPath = fbd.SelectedPath,
-                    DisplayName = System.IO.Path.GetFileName(fbd.SelectedPath),
-                    IncludeSubdirectories = true,
+                    DisplayName = existingWf?.DisplayName ?? System.IO.Path.GetFileName(fbd.SelectedPath),
+                    IncludeSubdirectories = false, // Always root-only for manual scans
+                    DebounceDelayMs = existingWf?.DebounceDelayMs ?? 100,
                     Enabled = true
                 };
 
-                await _orchestrator.ScanFolderNowAsync(tempConfig);
-                _trayService.ShowNotification("Folder Scan Initiated", $"Scanning '{tempConfig.DisplayName}' for automation rules.");
+                await _orchestrator.ScanFolderNowAsync(scanConfig);
+                _trayService.ShowNotification("Folder Scan Initiated", $"Scanning '{scanConfig.DisplayName}' root items for automation rules.");
             }
+        }
+
+        public async Task ScanDirectoryAsync(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !System.IO.Directory.Exists(folderPath)) return;
+
+            RestoreWindow();
+
+            var existingWf = _orchestrator.ConfigService.CurrentConfig.WatchFolders
+                .FirstOrDefault(w => string.Equals(w.FolderPath, folderPath, StringComparison.OrdinalIgnoreCase));
+
+            var scanConfig = new WatchFolderConfig
+            {
+                Id = existingWf?.Id ?? Guid.NewGuid().ToString("N"),
+                FolderPath = folderPath,
+                DisplayName = existingWf?.DisplayName ?? System.IO.Path.GetFileName(folderPath),
+                IncludeSubdirectories = false,
+                DebounceDelayMs = existingWf?.DebounceDelayMs ?? 100,
+                Enabled = true
+            };
+
+            await _orchestrator.ScanFolderNowAsync(scanConfig);
+            _trayService.ShowNotification("Folder Scan Initiated", $"Scanning '{scanConfig.DisplayName}' root items for automation rules.");
         }
 
         public void RestoreWindow()

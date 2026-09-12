@@ -122,6 +122,42 @@ Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kerne
 
 ## 🚀 Getting Started
 
+> 📖 **Guides & Documentation:**
+> - [Setup & Deployment Guide (INSTALLER.md)](INSTALLER.md) — Windows installer guide, silent deployment switches, configurable toggles, and clean uninstallation.
+> - [Visual Workflow Guide & Tutorial (TUTORIAL.md)](TUTORIAL.md) — UI walkthrough, 7-category in-place organization architecture, and custom rule recipes.
+
+### 📦 Windows Setup Installer (Recommended)
+
+FileOrgy includes a native Windows Setup executable with configurable installation toggles:
+
+1. Download or run **`installer/FileOrgy-Setup-v1.0.0.exe`**.
+2. Customize your installation with interactive toggles:
+   - **⚡ Run at Windows Startup**: Automatically starts FileOrgy on user logon.
+   - **🔔 Start Minimized to Tray**: Runs silently in the notification area with 0.00% idle CPU.
+   - **🖱️ Explorer Context Menu**: Adds right-click *"Organize with FileOrgy"* to folders.
+   - **🛡️ Run with Administrator Privileges**: Optional elevation for protected folders.
+   - **🖥️ Shortcuts**: Optional Desktop and Start Menu icons.
+3. Click **Install** to complete installation in seconds.
+
+> [!TIP]
+> **Privileges & UAC:** FileOrgy installs by default as a per-user app (requiring zero administrator elevation). If you enable *Run with Administrator Privileges*, setup automatically invokes Windows UAC via `ShellExecuteEx` upon completion to prevent Win32 error 740. See [INSTALLER.md](INSTALLER.md#6-privilege-architecture-uac-elevation--troubleshooting-error-740) for full details.
+
+#### Silent / Enterprise Deployment
+```powershell
+# Headless unattended installation with default settings:
+.\installer\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+
+# Custom task selection:
+.\installer\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /TASKS="autostart,startminimized,contextmenu"
+```
+
+#### Clean Uninstallation
+Uninstall via **Windows Settings ➔ Installed apps ➔ FileOrgy ➔ Uninstall**, or run:
+```powershell
+& "${env:LOCALAPPDATA}\Programs\FileOrgy\unins000.exe" /VERYSILENT /NORESTART
+```
+*Guarantees zero orphaned registry keys on shared system paths.*
+
 ### Prerequisites
 - Windows 10 / 11 (x64 / ARM64)
 - .NET 10.0 Runtime (or .NET 10 Desktop SDK for building from source)
@@ -135,7 +171,7 @@ cd C:\Users\swalih\FileOrgy
 # Restore and build the solution
 dotnet build FileOrgy.slnx -c Release
 
-# Run automated tests (19 passing unit tests)
+# Run automated tests (31 passing unit tests)
 dotnet test FileOrgy.slnx
 
 # Run FileOrgy

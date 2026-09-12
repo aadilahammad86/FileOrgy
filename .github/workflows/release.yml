@@ -1,0 +1,116 @@
+name: Release Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build, Package & Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Compute Semantic Version & Tag
+        id: version
+        shell: pwsh
+        run: |
+          $Version = "1.0.${{ github.run_number }}"
+          $Tag = "v$Version"
+          Write-Host "::notice ::Version: $Version, Tag: $Tag"
+          "VERSION=$Version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TAG=$Tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "version=$Version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "tag=$Tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Run Unit Tests
+        shell: pwsh
+        run: |
+          dotnet test FileOrgy.slnx --configuration Release --verbosity normal --logger "trx;LogFileName=test_results.trx"
+
+      - name: Publish .NET Application (Single-File)
+        shell: pwsh
+        run: |
+          dotnet publish src/FileOrgy.App/FileOrgy.App.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version=$env:VERSION `
+            -o dist/publish
+          
+          # Copy to FileOrgy.exe for installer and execution parity
+          Copy-Item -Force dist/publish/FileOrgy.App.exe dist/publish/FileOrgy.exe
+          Write-Host "Published files in dist/publish:"
+          Get-ChildItem dist/publish | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Install Inno Setup Compiler
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $innoPath = "C:\Program Files (x86)\Inno Setup 6"
+          if (Test-Path "$innoPath\ISCC.exe") {
+            Write-Host "Inno Setup compiler verified at $innoPath\ISCC.exe"
+            $innoPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            throw "ISCC.exe not found after Chocolatey installation."
+          }
+
+      - name: Compile Inno Setup Windows Installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path installer | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$env:VERSION FileOrgy.iss
+          Copy-Item -Force "installer\FileOrgy-Setup-v$env:VERSION.exe" "installer\FileOrgy-Setup.exe"
+          Write-Host "Compiled installer files:"
+          Get-ChildItem installer | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Package Portable Zip Archive
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist\publish\*" -DestinationPath "installer\FileOrgy-v$env:VERSION-portable.zip" -CompressionLevel Optimal
+          Write-Host "Portable archive created:"
+          Get-Item "installer\FileOrgy-v$env:VERSION-portable.zip" | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Verify Release Assets
+        shell: pwsh
+        run: |
+          $expectedFiles = @(
+            "installer\FileOrgy-Setup-v$env:VERSION.exe",
+            "installer\FileOrgy-Setup.exe",
+            "installer\FileOrgy-v$env:VERSION-portable.zip"
+          )
+          foreach ($f in $expectedFiles) {
+            if (-not (Test-Path $f)) {
+              throw "Missing required release asset: $f"
+            }
+            $item = Get-Item $f
+            Write-Host "Verified asset: $($item.Name) ($([math]::Round($item.Length / 1MB, 2)) MB)"
+          }
+
+      - name: Create GitHub Release and Upload Assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create $env:TAG `
+            --title "FileOrgy $env:TAG" `
+            --generate-notes `
+            "installer/FileOrgy-Setup-v$env:VERSION.exe#FileOrgy Setup (v$env:VERSION)" `
+            "installer/FileOrgy-Setup.exe#FileOrgy Setup (Latest)" `
+            "installer/FileOrgy-v$env:VERSION-portable.zip#FileOrgy Portable (v$env:VERSION)"

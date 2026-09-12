@@ -172,6 +172,17 @@ namespace FileOrgy.Core.Services
         {
             if (_isPaused || !config.Enabled) return;
 
+            // Strict root-only check: if subdirectories are not included, ignore any file not directly in watch folder root
+            if (!config.IncludeSubdirectories)
+            {
+                string parent = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(fullPath) ?? string.Empty);
+                string root = Path.TrimEndingDirectorySeparator(config.FolderPath ?? string.Empty);
+                if (!string.Equals(parent, root, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
             // Ignore directories
             if (Directory.Exists(fullPath)) return;
 
@@ -188,7 +199,6 @@ namespace FileOrgy.Core.Services
                 (_, oldCts) =>
                 {
                     oldCts.Cancel();
-                    oldCts.Dispose();
                     return cts;
                 });
 

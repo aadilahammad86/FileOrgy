@@ -137,16 +137,18 @@ namespace FileOrgy.Core.Services
                     return MatchesWildcardPattern(text, condValue, !condition.CaseSensitive);
 
                 case ConditionOperator.InKeywordList:
-                    if (!string.IsNullOrEmpty(condition.KeywordListName) &&
-                        keywordLists.TryGetValue(condition.KeywordListName, out var keywords))
+                    string inList = !string.IsNullOrEmpty(condition.KeywordListName) ? condition.KeywordListName : condValue;
+                    if (!string.IsNullOrEmpty(inList) &&
+                        keywordLists.TryGetValue(inList, out var keywords))
                     {
                         return keywords.Any(kw => !string.IsNullOrWhiteSpace(kw) && text.Contains(kw.Trim(), comparison));
                     }
                     return false;
 
                 case ConditionOperator.NotInKeywordList:
-                    if (!string.IsNullOrEmpty(condition.KeywordListName) &&
-                        keywordLists.TryGetValue(condition.KeywordListName, out var kwList))
+                    string notInList = !string.IsNullOrEmpty(condition.KeywordListName) ? condition.KeywordListName : condValue;
+                    if (!string.IsNullOrEmpty(notInList) &&
+                        keywordLists.TryGetValue(notInList, out var kwList))
                     {
                         return !kwList.Any(kw => !string.IsNullOrWhiteSpace(kw) && text.Contains(kw.Trim(), comparison));
                     }
@@ -167,18 +169,30 @@ namespace FileOrgy.Core.Services
             StringComparison comparison,
             IReadOnlyDictionary<string, List<string>> keywordLists)
         {
+            string listName = !string.IsNullOrEmpty(condition.KeywordListName) ? condition.KeywordListName : condition.Value;
+
             if (condition.Operator == ConditionOperator.InKeywordList &&
-                !string.IsNullOrEmpty(condition.KeywordListName) &&
-                keywordLists.TryGetValue(condition.KeywordListName, out var keywords))
+                !string.IsNullOrEmpty(listName) &&
+                keywordLists.TryGetValue(listName, out var keywords))
             {
                 return keywords.Any(kw => string.Equals(ext, kw.Trim().TrimStart('.'), comparison));
             }
 
             if (condition.Operator == ConditionOperator.NotInKeywordList &&
-                !string.IsNullOrEmpty(condition.KeywordListName) &&
-                keywordLists.TryGetValue(condition.KeywordListName, out var kwList))
+                !string.IsNullOrEmpty(listName) &&
+                keywordLists.TryGetValue(listName, out var kwList))
             {
                 return !kwList.Any(kw => string.Equals(ext, kw.Trim().TrimStart('.'), comparison));
+            }
+
+            if (condition.Operator == ConditionOperator.Equals)
+            {
+                return string.Equals(ext, targetExt, comparison);
+            }
+
+            if (condition.Operator == ConditionOperator.NotEquals)
+            {
+                return !string.Equals(ext, targetExt, comparison);
             }
 
             // Fall back to standard string evaluation

@@ -114,6 +114,7 @@ namespace FileOrgy.App.ViewModels
         public ICommand DuplicateRuleCommand { get; }
         public ICommand MoveUpCommand { get; }
         public ICommand MoveDownCommand { get; }
+        public ICommand LoadInPlacePresetsCommand { get; }
 
         public event Action<Rule>? RequestEditRule;
 
@@ -127,8 +128,65 @@ namespace FileOrgy.App.ViewModels
             DuplicateRuleCommand = new RelayCommand(DuplicateRule, () => SelectedRule != null);
             MoveUpCommand = new RelayCommand(MoveUp, () => SelectedRule != null && Rules.IndexOf(SelectedRule) > 0);
             MoveDownCommand = new RelayCommand(MoveDown, () => SelectedRule != null && Rules.IndexOf(SelectedRule) < Rules.Count - 1);
+            LoadInPlacePresetsCommand = new RelayCommand(LoadInPlacePresets);
 
             LoadRules();
+        }
+
+        private void LoadInPlacePresets()
+        {
+            var existingPresets = _orchestrator.ConfigService.CurrentConfig.Rules
+                .Where(r => r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase) ||
+                            r.Id.StartsWith("preset-inplace-", StringComparison.OrdinalIgnoreCase) ||
+                            r.Name.StartsWith("In-Place:", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            bool overwrite = false;
+            if (existingPresets.Count > 0)
+            {
+                var promptResult = System.Windows.MessageBox.Show(
+                    $"In-place organizer rules are already present ({existingPresets.Count} detected).\n\nDo you want to reset them to default presets?",
+                    "Restore In-Place Presets",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (promptResult != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+                overwrite = true;
+            }
+            else
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "Load In-Place Organization Presets?\n\nThis will add rules to automatically sort files into Programs, Documents, Compressed, Pictures, Videos, and Audio folders directly inside each monitored directory using dynamic in-place relocation.",
+                    "Load In-Place Presets",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            _orchestrator.ConfigService.LoadInPlaceOrganizationPresets(overwrite);
+            LoadRules();
+            SelectedRule = Rules.FirstOrDefault(r => r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase) ||
+                                                    r.Id.StartsWith("preset-inplace-", StringComparison.OrdinalIgnoreCase)) ?? Rules.FirstOrDefault();
+
+            System.Windows.MessageBox.Show(
+                "6 In-Place Organization Presets loaded successfully:\n\n" +
+                "• In-Place: Programs & Installers (.exe, .msi, .dmg)\n" +
+                "• In-Place: Documents & Tables (.pdf, .docx, .doc, .xlsx, .csv, .txt, etc.)\n" +
+                "• In-Place: Compressed Archives (.zip, .rar, .7z, .tar, .gz, etc.)\n" +
+                "• In-Place: Pictures & Graphics (.jpg, .jpeg, .png, .gif, .svg, etc.)\n" +
+                "• In-Place: Videos & Movies (.mp4, .mkv, .avi, .mov, etc.)\n" +
+                "• In-Place: Audio & Music (.mp3, .wav, .flac, .m4a, etc.)\n\n" +
+                "Target subfolders are organized in-place under each monitored directory.",
+                "Presets Loaded",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         public void LoadRules()

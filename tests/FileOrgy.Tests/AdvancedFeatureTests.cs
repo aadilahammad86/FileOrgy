@@ -248,5 +248,163 @@ namespace FileOrgy.Tests
             string detected = await tcs.Task;
             Assert.Equal(testFilePath, detected);
         }
+
+        [Fact]
+        public async Task FileSystemMonitorService_IgnoresNestedFilesInSubdirectories_WhenIncludeSubdirectoriesFalse()
+        {
+            string watchDir = Path.Combine(_tempFolder, "RootOnlyWatchDir");
+            string subDir = Path.Combine(watchDir, "NestedSubFolder");
+            Directory.CreateDirectory(subDir);
+
+            using var monitor = new FileSystemMonitorService();
+            var detectedFiles = new List<string>();
+
+            monitor.FileDetected += (s, e) =>
+            {
+                detectedFiles.Add(e.FilePath);
+            };
+
+            var config = new WatchFolderConfig
+            {
+                Id = "root-only-folder",
+                FolderPath = watchDir,
+                IncludeSubdirectories = false,
+                Enabled = true,
+                DebounceDelayMs = 150
+            };
+
+            monitor.StartWatcher(config);
+
+            // Write a file in the nested subfolder
+            string nestedFile = Path.Combine(subDir, "should_be_ignored.pdf");
+            await File.WriteAllTextAsync(nestedFile, "Nested document content");
+
+            // Wait brief debounce time
+            await Task.Delay(400);
+
+            // Verify the nested file was completely ignored
+            Assert.Empty(detectedFiles);
+        }
+
+        [Fact]
+        public void ConfigService_ExtractArchiveRule_DefaultEnqueueExtractedFilesIsFalse()
+        {
+            var config = ConfigService.CreateDefaultConfiguration();
+            var archiveRule = config.Rules.FirstOrDefault(r => r.Steps.Any(s => s.StepType == StepType.ExtractArchive));
+
+            Assert.NotNull(archiveRule);
+            var extractStep = archiveRule.Steps.First(s => s.StepType == StepType.ExtractArchive);
+            Assert.False(extractStep.EnqueueExtractedFiles);
+        }
+
+        [Fact]
+        public async Task FileOrgyOrchestrator_LogsAuditWhenNoRuleMatches()
+        {
+            string logPath = Path.Combine(_tempFolder, "audit_test.jsonl");
+            var customLogManager = new LogManager(logPath);
+
+            var customConfig = new ConfigService();
+            // Clear rules to ensure no rule matches
+            customConfig.CurrentConfig.Rules.Clear();
+
+            using var orchestrator = new FileOrgyOrchestrator(customConfig, customLogManager);
+
+            string testFile = Path.Combine(_tempFolder, "unmatched_file.xyz");
+            await File.WriteAllTextAsync(testFile, "Hello unmatched");
+
+            bool matched = await orchestrator.ProcessFileAsync(testFile);
+            Assert.False(matched);
+
+            var recentLogs = customLogManager.GetRecentLogs();
+            var auditLog = recentLogs.FirstOrDefault(l => l.SourcePath == testFile);
+
+            Assert.NotNull(auditLog);
+            Assert.Equal(LogLevel.Info, auditLog.Level);
+            Assert.Contains("Left untouched in folder", auditLog.Details);
+        }
+
+        [Fact]
+        public void SmartRenamer_EvaluatesDirectoryAndDirTokens()
+        {
+            string subFolder = Path.Combine(_tempFolder, "SourceFolder");
+            Directory.CreateDirectory(subFolder);
+            string filePath = Path.Combine(subFolder, "test_document.pdf");
+            File.WriteAllText(filePath, "dummy content");
+
+            var context = new WorkflowContext(filePath);
+
+            string template1 = Path.Combine("{directory}", "Documents");
+            string result1 = SmartRenamer.EvaluateTemplate(template1, context);
+            Assert.Equal(Path.Combine(subFolder, "Documents"), result1);
+
+            string template2 = Path.Combine("{dir}", "Programs");
+            string result2 = SmartRenamer.EvaluateTemplate(template2, context);
+            Assert.Equal(Path.Combine(subFolder, "Programs"), result2);
+
+            string template3 = Path.Combine("{folder}", "Pictures");
+            string result3 = SmartRenamer.EvaluateTemplate(template3, context);
+            Assert.Equal(Path.Combine(subFolder, "Pictures"), result3);
+        }
+
+        [Fact]
+        public async Task WorkflowEngine_ExecutesInPlaceCategoryRouting_UsingDirectoryToken()
+        {
+            string watchDir = Path.Combine(_tempFolder, "InPlaceWatchDir");
+            Directory.CreateDirectory(watchDir);
+
+            string invoiceFile = Path.Combine(watchDir, "annual_report.pdf");
+            await File.WriteAllTextAsync(invoiceFile, "Report content");
+
+            var context = new WorkflowContext(invoiceFile);
+            var keywordLists = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["DocExts"] = new List<string> { "pdf", "docx", "xlsx" }
+            };
+            var globalVars = new Dictionary<string, string>();
+
+            var inPlaceDocumentRule = new Rule
+            {
+                Name = "In-Place Organize Documents",
+                Enabled = true,
+                Priority = 1,
+                MatchLogic = ConditionMatchLogic.All,
+                Conditions = new List<RuleCondition>
+                {
+                    new RuleCondition
+                    {
+                        Target = RuleTarget.Extension,
+                        Operator = ConditionOperator.InKeywordList,
+                        KeywordListName = "DocExts"
+                    }
+                },
+                Steps = new List<WorkflowStep>
+                {
+                    new WorkflowStep
+                    {
+                        StepType = StepType.MoveFile,
+                        Name = "Move into in-place Documents subfolder",
+                        DestinationTemplate = Path.Combine("{directory}", "Documents")
+                    }
+                }
+            };
+
+            // 1. Verify condition matches
+            bool isMatch = ConditionEvaluator.EvaluateRule(inPlaceDocumentRule, context, keywordLists, globalVars);
+            Assert.True(isMatch);
+
+            // 2. Execute workflow
+            var execResult = await WorkflowEngine.ExecuteWorkflowAsync(inPlaceDocumentRule, context);
+
+            // 3. Assert execution success and target destination
+            Assert.True(execResult.IsSuccess);
+            Assert.False(File.Exists(invoiceFile));
+
+            string expectedPath = Path.Combine(watchDir, "Documents", "annual_report.pdf");
+            Assert.True(File.Exists(expectedPath));
+            Assert.Equal(expectedPath, context.CurrentFilePath);
+            Assert.Equal(Path.Combine(watchDir, "Documents"), context.DirectoryPath);
+        }
     }
 }
+
+

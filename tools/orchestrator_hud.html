@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FileOrgy - Multi-Agent Live Orchestrator HUD</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --border: #1e293b;
+      --border-glow: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-purple: #a855f7;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .hud-card {
+      width: 100%;
+      max-width: 860px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.1);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .spinner-ring {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #1e293b;
+      border-top: 3px solid var(--accent-cyan);
+      border-right: 3px solid var(--accent-purple);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .title-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .title-text p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--accent-cyan);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-cyan);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.4); }
+    }
+    .progress-section {
+      margin-bottom: 22px;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: #0f172a;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+      position: relative;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 75%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8, #a855f7, #38bdf8);
+      background-size: 200% 100%;
+      border-radius: 6px;
+      animation: shimmer 2s linear infinite;
+      transition: width 0.4s ease;
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .table-container {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: #0f172a;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #1e293b;
+      color: #e2e8f0;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .agent-id {
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+    .agent-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .agent-status.running { color: var(--accent-cyan); }
+    .agent-status.completed { color: var(--accent-green); }
+    .agent-status.queued { color: var(--accent-amber); }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud-card">
+    <div class="header">
+      <div class="title-group">
+        <div class="spinner-ring" id="mainSpinner"></div>
+        <div class="title-text">
+          <h1>FILEORGY MAIN ORCHESTRATOR HUD</h1>
+          <p id="activeTask">Active Task: Autonomous Multi-Agent Execution & Pipeline Monitoring</p>
+        </div>
+      </div>
+      <div class="state-badge">
+        <span class="pulse-dot"></span>
+        <span id="lifecycleState">EXECUTING</span>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-meta">
+        <span id="streamProgress">Overall Stream Progress: 3 of 4 Workstreams Active</span>
+        <span id="percentText"><strong>75%</strong></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar" style="width: 75%;"></div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent ID</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Current Subtask</th>
+          </tr>
+        </thead>
+        <tbody id="agentTableBody">
+          <tr>
+            <td class="agent-id">Agent-Orch</td>
+            <td>Main Orchestrator</td>
+            <td><span class="agent-status running"><span class="pulse-dot" style="background:#38bdf8;"></span> Running</span></td>
+            <td>75%</td>
+            <td>Coordinating parallel pipelines & health check</td>
+          </tr>
+          <tr>
+            <td class="agent-id">Agent-Core</td>
+            <td>Core Engine Specialist</td>
+            <td><span class="agent-status completed">🟢 Completed</span></td>
+            <td>100%</td>
+            <td>Validated lock retry loops & root safety invariants</td>
+          </tr>
+          <tr>
+            <td class="agent-id">Agent-UI</td>
+            <td>WPF UI/UX Specialist</td>
+            <td><span class="agent-status running"><span class="pulse-dot" style="background:#38bdf8;"></span> Running</span></td>
+            <td>80%</td>
+            <td>Rendering dynamic live animated indicators</td>
+          </tr>
+          <tr>
+            <td class="agent-id">Agent-QA</td>
+            <td>QA & Test Engineer</td>
+            <td><span class="agent-status queued">⏳ Queued</span></td>
+            <td>0%</td>
+            <td>Awaiting UI binding completion for regression pass</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <span>Auto-refreshing live agent states</span>
+      <span>Antigravity Dynamic Multi-Agent Swarm</span>
+    </div>
+  </div>
+</body>
+</html>

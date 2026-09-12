@@ -44,12 +44,41 @@ namespace FileOrgy.App.ViewModels
             }
         }
 
-        public bool IsDashboardTab => CurrentTab == NavigationTab.Dashboard;
-        public bool IsWatchFoldersTab => CurrentTab == NavigationTab.WatchFolders;
-        public bool IsRulesTab => CurrentTab == NavigationTab.Rules;
-        public bool IsVariablesTab => CurrentTab == NavigationTab.Variables;
-        public bool IsLogsTab => CurrentTab == NavigationTab.Logs;
-        public bool IsSettingsTab => CurrentTab == NavigationTab.Settings;
+        public bool IsDashboardTab
+        {
+            get => CurrentTab == NavigationTab.Dashboard;
+            set { if (value) CurrentTab = NavigationTab.Dashboard; }
+        }
+
+        public bool IsWatchFoldersTab
+        {
+            get => CurrentTab == NavigationTab.WatchFolders;
+            set { if (value) CurrentTab = NavigationTab.WatchFolders; }
+        }
+
+        public bool IsRulesTab
+        {
+            get => CurrentTab == NavigationTab.Rules;
+            set { if (value) CurrentTab = NavigationTab.Rules; }
+        }
+
+        public bool IsVariablesTab
+        {
+            get => CurrentTab == NavigationTab.Variables;
+            set { if (value) CurrentTab = NavigationTab.Variables; }
+        }
+
+        public bool IsLogsTab
+        {
+            get => CurrentTab == NavigationTab.Logs;
+            set { if (value) CurrentTab = NavigationTab.Logs; }
+        }
+
+        public bool IsSettingsTab
+        {
+            get => CurrentTab == NavigationTab.Settings;
+            set { if (value) CurrentTab = NavigationTab.Settings; }
+        }
 
         public ICommand NavigateCommand { get; }
 

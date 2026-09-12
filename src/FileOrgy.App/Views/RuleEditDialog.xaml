@@ -115,8 +115,8 @@
                     <StackPanel Grid.Row="2" Margin="0,0,0,12">
                         <TextBlock Text="Match Logic" FontSize="12" FontWeight="SemiBold" Foreground="#D1D5DB" Margin="0,0,0,4"/>
                         <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="Match ALL conditions (AND)" IsChecked="{Binding MatchLogic, Converter={StaticResource BoolToVis}, ConverterParameter=All}" Foreground="#F9FAFB" Margin="0,0,16,0"/>
-                            <RadioButton Content="Match ANY condition (OR)" Foreground="#F9FAFB"/>
+                            <RadioButton Content="Match ALL conditions (AND)" IsChecked="{Binding IsMatchAll}" Foreground="#F9FAFB" Margin="0,0,16,0"/>
+                            <RadioButton Content="Match ANY condition (OR)" IsChecked="{Binding IsMatchAny}" Foreground="#F9FAFB"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -147,18 +147,19 @@
                                             <!-- Target -->
                                             <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,6">
                                                 <TextBlock Text="Target" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}" Background="#1F2937" Foreground="#111827"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}" Background="#1F2937" Foreground="#F9FAFB"/>
                                             </StackPanel>
 
                                             <!-- Operator -->
                                             <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,6,6">
                                                 <TextBlock Text="Operator" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}" Background="#1F2937" Foreground="#111827"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}" Background="#1F2937" Foreground="#F9FAFB"/>
                                             </StackPanel>
 
                                             <!-- Remove Condition Button -->
                                             <Button Grid.Row="0" Grid.Column="2" Content="✕"
                                                     Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
                                                     Background="#EF4444" Foreground="White" Width="24" Height="24" VerticalAlignment="Bottom" Margin="0,0,0,6" BorderThickness="0" Cursor="Hand"/>
 
                                             <!-- Value -->
@@ -190,7 +191,8 @@
                         <TextBlock Text="Workflow Execution Sequence" FontSize="14" FontWeight="SemiBold" Foreground="#F9FAFB" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="▲ Up" Command="{Binding MoveStepUpCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand"/>
-                            <Button Content="▼ Down" Command="{Binding MoveStepDownCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
+                            <Button Content="▼ Down" Command="{Binding MoveStepDownCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand"/>
+                            <Button Content="✕ Remove" Command="{Binding RemoveStepCommand}" CommandParameter="{Binding SelectedStep}" Padding="8,4" Background="#EF4444" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
                             <Button Content="+ Add Step" Command="{Binding AddStepCommand}" Padding="10,4" Background="#10B981" Foreground="White" BorderThickness="0" Cursor="Hand"/>
                         </StackPanel>
                     </Grid>
@@ -230,7 +232,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,4,0">
                                     <TextBlock Text="Step Type" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource StepTypeValues}}" SelectedItem="{Binding StepType}" Background="#111827" Foreground="#111827"/>
+                                    <ComboBox ItemsSource="{Binding Source={StaticResource StepTypeValues}}" SelectedItem="{Binding StepType}" Background="#111827" Foreground="#F9FAFB"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="4,0,0,0">
                                     <TextBlock Text="Step Name" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
@@ -249,11 +251,11 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,4,0">
                                         <TextBlock Text="Case Transform" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                        <ComboBox ItemsSource="{Binding Source={StaticResource CaseTransformValues}}" SelectedItem="{Binding CaseTransform}" Background="#111827" Foreground="#111827"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CaseTransformValues}}" SelectedItem="{Binding CaseTransform}" Background="#111827" Foreground="#F9FAFB"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="4,0,0,0">
                                         <TextBlock Text="Conflict Resolution" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                        <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#111827"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#F9FAFB"/>
                                     </StackPanel>
                                 </Grid>
                             </StackPanel>
@@ -264,17 +266,17 @@
                                 <TextBox Text="{Binding DestinationTemplate, UpdateSourceTrigger=PropertyChanged}" Background="#111827" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6"/>
                                 <StackPanel Margin="0,6,0,0">
                                     <TextBlock Text="Conflict Resolution" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#111827"/>
+                                    <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#F9FAFB"/>
                                 </StackPanel>
                             </StackPanel>
 
                             <!-- Archive Extraction Options -->
                             <StackPanel Visibility="{Binding IsArchiveVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
                                 <TextBlock Text="Extraction Destination" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchiveDestValues}}" SelectedItem="{Binding ExtractDestination}" Background="#111827" Foreground="#111827"/>
+                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchiveDestValues}}" SelectedItem="{Binding ExtractDestination}" Background="#111827" Foreground="#F9FAFB"/>
 
                                 <TextBlock Text="After Extraction Action" FontSize="11" Foreground="#9CA3AF" Margin="0,6,0,2"/>
-                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchivePostActionValues}}" SelectedItem="{Binding ArchivePostAction}" Background="#111827" Foreground="#111827"/>
+                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchivePostActionValues}}" SelectedItem="{Binding ArchivePostAction}" Background="#111827" Foreground="#F9FAFB"/>
 
                                 <CheckBox Content="Automatically organize extracted files with pipeline" IsChecked="{Binding EnqueueExtractedFiles}" Foreground="#F9FAFB" Margin="0,8,0,0"/>
                             </StackPanel>

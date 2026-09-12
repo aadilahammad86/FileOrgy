@@ -217,6 +217,17 @@ namespace FileOrgy.Core.Services
                 }
             }
 
+            if (!anyRuleMatched)
+            {
+                _logManager.AddLog(new LogEntry
+                {
+                    Level = LogLevel.Info,
+                    EventType = LogEventType.SystemInfo,
+                    SourcePath = filePath,
+                    Details = $"No matching rule for '{Path.GetFileName(filePath)}'. Left untouched in folder."
+                });
+            }
+
             return anyRuleMatched;
         }
 

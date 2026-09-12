@@ -313,7 +313,7 @@ namespace FileOrgy.Core.Services
                 return;
             }
 
-            File.Move(context.CurrentFilePath, resolvedPath);
+            File.Move(context.CurrentFilePath, resolvedPath, overwrite: true);
             context.CurrentFilePath = resolvedPath;
 
             result.IsSuccess = true;

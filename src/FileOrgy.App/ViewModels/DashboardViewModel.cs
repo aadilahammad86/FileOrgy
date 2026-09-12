@@ -59,9 +59,12 @@ namespace FileOrgy.App.ViewModels
                 {
                     _orchestrator.IsMonitoringPaused = !value;
                     StatusText = value ? "Active - Monitoring Folders" : "Paused";
+                    OnPropertyChanged(nameof(ToggleMonitoringButtonText));
                 }
             }
         }
+
+        public string ToggleMonitoringButtonText => IsMonitoring ? "⏸ Pause Monitoring" : "▶ Resume Monitoring";
 
         public string StatusText
         {
