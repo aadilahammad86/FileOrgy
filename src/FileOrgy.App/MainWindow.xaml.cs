@@ -1,7 +1,11 @@
 using System;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using FileOrgy.App.Services;
 using FileOrgy.App.ViewModels;
 using FileOrgy.App.Views;
@@ -20,6 +24,7 @@ namespace FileOrgy.App
         public MainWindow()
         {
             InitializeComponent();
+            InitializeIcon();
 
             _orchestrator = new FileOrgyOrchestrator();
             _viewModel = new MainViewModel(_orchestrator);
@@ -34,12 +39,50 @@ namespace FileOrgy.App
             _viewModel.RequestScanAnyFolder += PromptScanFolder;
         }
 
+        private void InitializeIcon()
+        {
+            try
+            {
+                var iconUri = new Uri("pack://application:,,,/FileOrgy.App;component/assets/app.ico", UriKind.RelativeOrAbsolute);
+                Icon = BitmapFrame.Create(iconUri);
+                return;
+            }
+            catch
+            {
+                // Pack URI lookup fallback
+            }
+
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string[] candidatePaths =
+                {
+                    Path.Combine(baseDir, "assets", "app.ico"),
+                    Path.Combine(baseDir, "app.ico")
+                };
+
+                foreach (var path in candidatePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        Icon = BitmapFrame.Create(new Uri(path, UriKind.Absolute));
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // Silently fallback without crashing - ensures rock-solid startup
+            }
+        }
+
         private void OpenRuleEditor(Rule rule)
         {
             var editVm = new RuleEditViewModel(rule, _orchestrator.ConfigService);
             var dialog = new RuleEditDialog(editVm)
             {
-                Owner = this
+                Owner = this,
+                Icon = Icon
             };
 
             if (dialog.ShowDialog() == true)

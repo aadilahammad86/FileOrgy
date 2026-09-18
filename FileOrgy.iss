@@ -81,6 +81,7 @@ Name: "runasadmin"; Description: "Always run FileOrgy with Administrator privile
 [Files]
 Source: "dist\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "assets\app.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\app.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startmenuicon

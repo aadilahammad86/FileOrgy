@@ -6,7 +6,6 @@
         xmlns:converters="clr-namespace:FileOrgy.App.Converters"
         mc:Ignorable="d"
         Title="FileOrgy - Lightweight Real-Time Folder Automation &amp; Organization"
-        Icon="assets/app.ico"
         Height="780" Width="1200"
         MinHeight="650" MinWidth="950"
         WindowStartupLocation="CenterScreen"

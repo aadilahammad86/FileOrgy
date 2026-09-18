@@ -11,8 +11,9 @@ namespace FileOrgy.App
         {
             DispatcherUnhandledException += (s, e) =>
             {
+                string details = FormatExceptionDetails(e.Exception);
                 System.Windows.MessageBox.Show(
-                    $"FileOrgy Error:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}",
+                    $"FileOrgy Error:\n\n{details}",
                     "FileOrgy Exception",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -23,13 +24,34 @@ namespace FileOrgy.App
             {
                 if (e.ExceptionObject is Exception ex)
                 {
+                    string details = FormatExceptionDetails(ex);
                     System.Windows.MessageBox.Show(
-                        $"FileOrgy Fatal Error:\n\n{ex.Message}\n\n{ex.StackTrace}",
+                        $"FileOrgy Fatal Error:\n\n{details}",
                         "FileOrgy Fatal Error",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
             };
+        }
+
+        private static string FormatExceptionDetails(Exception ex)
+        {
+            var sb = new System.Text.StringBuilder();
+            var current = ex;
+            int depth = 0;
+            while (current != null)
+            {
+                if (depth > 0)
+                {
+                    sb.AppendLine($"\n--- Inner Exception ({depth}) ---");
+                }
+                sb.AppendLine($"{current.GetType().FullName}: {current.Message}");
+                current = current.InnerException;
+                depth++;
+            }
+            sb.AppendLine("\n--- Stack Trace ---");
+            sb.AppendLine(ex.StackTrace);
+            return sb.ToString();
         }
 
         protected override void OnStartup(StartupEventArgs e)
