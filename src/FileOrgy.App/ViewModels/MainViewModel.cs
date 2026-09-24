@@ -84,6 +84,7 @@ namespace FileOrgy.App.ViewModels
 
         public event Action<Rule>? RequestEditRuleModal;
         public event Action? RequestScanAnyFolder;
+        public event Action? RequestScanMonitoredFolders;
 
         public MainViewModel(FileOrgyOrchestrator orchestrator)
         {
@@ -109,6 +110,7 @@ namespace FileOrgy.App.ViewModels
             });
 
             DashboardVM.RequestScanFolder += () => RequestScanAnyFolder?.Invoke();
+            DashboardVM.RequestScanMonitoredFolders += () => RequestScanMonitoredFolders?.Invoke();
             RulesVM.RequestEditRule += rule => RequestEditRuleModal?.Invoke(rule);
         }
     }

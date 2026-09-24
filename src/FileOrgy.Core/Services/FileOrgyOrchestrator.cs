@@ -64,6 +64,32 @@ namespace FileOrgy.Core.Services
 
             // Sync watch folders from configuration
             _monitorService.SynchronizeWatchFolders(_configService.CurrentConfig.WatchFolders);
+
+            // Start initial catch-up scan if configured
+            if (_configService.CurrentConfig.Settings.ScanOnStartup)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(1500, _cts.Token);
+                        if (!_cts.IsCancellationRequested)
+                        {
+                            await ScanAllWatchFoldersAsync(_cts.Token);
+                        }
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex)
+                    {
+                        _logManager.AddLog(new LogEntry
+                        {
+                            Level = LogLevel.Error,
+                            EventType = LogEventType.ErrorOccurred,
+                            Details = $"Initial startup scan error: {ex.Message}"
+                        });
+                    }
+                });
+            }
         }
 
         public void ReloadConfiguration()
@@ -90,6 +116,25 @@ namespace FileOrgy.Core.Services
             });
 
             await _monitorService.ScanFolderAsync(folderConfig, ct);
+        }
+
+        public async Task ScanAllWatchFoldersAsync(CancellationToken ct = default)
+        {
+            var enabledFolders = _configService.CurrentConfig.WatchFolders.Where(w => w.Enabled).ToList();
+            if (enabledFolders.Count == 0) return;
+
+            _logManager.AddLog(new LogEntry
+            {
+                Level = LogLevel.Info,
+                EventType = LogEventType.SystemInfo,
+                Details = $"Scanning all active monitored folders ({enabledFolders.Count} folder(s))..."
+            });
+
+            foreach (var folder in enabledFolders)
+            {
+                if (ct.IsCancellationRequested) break;
+                await _monitorService.ScanFolderAsync(folder, ct);
+            }
         }
 
         private void OnFileDetected(object? sender, FileDetectedEventArgs e)

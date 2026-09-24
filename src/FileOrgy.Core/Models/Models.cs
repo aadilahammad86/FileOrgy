@@ -211,6 +211,7 @@ namespace FileOrgy.Core.Models
         public bool StartWithWindows { get; set; } = false;
         public bool MinimizeToTrayOnClose { get; set; } = true;
         public bool ShowDesktopNotifications { get; set; } = true;
+        public bool ScanOnStartup { get; set; } = true;
         public int GlobalDebounceDelayMs { get; set; } = 1200;
         public int MaxConcurrentOperations { get; set; } = 2;
         public int LogRetentionDays { get; set; } = 30;

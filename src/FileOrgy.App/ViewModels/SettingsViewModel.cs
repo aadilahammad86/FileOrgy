@@ -54,6 +54,20 @@ namespace FileOrgy.App.ViewModels
             }
         }
 
+        public bool ScanOnStartup
+        {
+            get => _settings.ScanOnStartup;
+            set
+            {
+                if (_settings.ScanOnStartup != value)
+                {
+                    _settings.ScanOnStartup = value;
+                    OnPropertyChanged();
+                    SaveSettings();
+                }
+            }
+        }
+
         public int GlobalDebounceDelayMs
         {
             get => _settings.GlobalDebounceDelayMs;

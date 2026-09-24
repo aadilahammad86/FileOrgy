@@ -87,6 +87,7 @@ namespace FileOrgy.Core.Services
                     StartWithWindows = false,
                     MinimizeToTrayOnClose = true,
                     ShowDesktopNotifications = true,
+                    ScanOnStartup = true,
                     GlobalDebounceDelayMs = 1200,
                     MaxConcurrentOperations = 2,
                     LogRetentionDays = 30,
@@ -265,62 +266,141 @@ namespace FileOrgy.Core.Services
             config.Settings ??= new AppSettings();
 
             EnsureInPlaceKeywordLists(config);
+
+            // Auto-upgrade existing configs that have in-place rules but miss the "Others" catch-all rule
+            if (config.Rules.Any(r => r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase)) &&
+                !config.Rules.Any(r => r.Id == "rule-inplace-others"))
+            {
+                var othersPreset = GetInPlaceOthersPreset();
+                int maxPri = config.Rules.Count > 0 ? config.Rules.Max(r => r.Priority) : 10;
+                othersPreset.Priority = maxPri + 1;
+                config.Rules.Add(othersPreset);
+            }
+        }
+
+        private static void MergeExtensions(AppConfiguration config, string key, IEnumerable<string> extensions)
+        {
+            if (!config.KeywordLists.TryGetValue(key, out var list))
+            {
+                config.KeywordLists[key] = extensions.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            }
+            else
+            {
+                foreach (var ext in extensions)
+                {
+                    if (!list.Contains(ext, StringComparer.OrdinalIgnoreCase))
+                    {
+                        list.Add(ext);
+                    }
+                }
+            }
         }
 
         public static void EnsureInPlaceKeywordLists(AppConfiguration config)
         {
             config.KeywordLists ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            if (!config.KeywordLists.ContainsKey("ProgramExts"))
+            // 1. Programs & Installers
+            MergeExtensions(config, "ProgramExts", new[]
             {
-                config.KeywordLists["ProgramExts"] = new List<string> { "exe", "msi", "dmg" };
-            }
+                "exe", "msi", "msix", "appx", "appxbundle", "msixbundle", "msp", "com", "scr", "cpl", "msc", "gadget",
+                "bat", "cmd", "ps1", "psm1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "reg",
+                "appimage", "apk", "xapk", "apks", "ipa", "run", "sh", "bash", "command", "jar"
+            });
 
-            if (!config.KeywordLists.ContainsKey("DocumentExts"))
+            // 2. Documents & Tables
+            MergeExtensions(config, "DocumentExts", new[]
             {
-                config.KeywordLists["DocumentExts"] = new List<string>
-                {
-                    "pdf", "docx", "doc", "xlsx", "xls", "csv", "tsv", "txt", "md", "html", "rtf", "pptx"
-                };
-            }
-            else
+                "pdf", "xps", "oxps",
+                "doc", "docx", "docm", "dot", "dotx", "dotm", "odt", "ott", "rtf", "wps", "wpd", "pages",
+                "xls", "xlsx", "xlsm", "xlsb", "xlt", "xltx", "xltm", "ods", "ots", "csv", "tsv", "dif", "numbers",
+                "ppt", "pptx", "pptm", "pot", "potx", "potm", "pps", "ppsx", "ppsm", "odp", "otp", "key",
+                "txt", "md", "markdown", "rst", "tex", "latex", "log", "nfo", "text",
+                "xml", "json", "jsonc", "json5", "yaml", "yml", "toml", "ini", "cfg", "conf", "properties", "env", "sql",
+                "html", "htm", "xhtml", "mhtml", "mht",
+                "epub", "mobi", "azw", "azw3", "djvu", "fb2", "cbr", "cbz"
+            });
+
+            // 3. Compressed Archives & Disk Images
+            MergeExtensions(config, "ArchiveExts", new[]
             {
-                var docExts = config.KeywordLists["DocumentExts"];
-                var required = new[] { "pdf", "docx", "doc", "xlsx", "xls", "csv", "tsv", "txt", "md", "html", "rtf", "pptx" };
-                foreach (var ext in required)
+                "zip", "rar", "7z", "tar", "gz", "gzip", "bz2", "bzip2", "tgz", "tbz", "tbz2", "txz", "tlz", "tzst",
+                "xz", "zst", "zstd", "lz", "lzma", "lz4", "lha", "lzh", "z", "ace", "uue", "squashfs",
+                "iso", "img", "vhd", "vhdx", "vmdk", "qcow2", "wim", "swm", "esd",
+                "cab", "deb", "rpm", "pkg", "dmg", "cpio", "ar", "shar"
+            });
+
+            // 4. Pictures & Graphics
+            MergeExtensions(config, "PictureExts", new[]
+            {
+                "jpg", "jpeg", "jpe", "jfif", "png", "gif", "bmp", "dib", "webp", "avif",
+                "tif", "tiff", "heic", "heif", "hif", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "pef", "dng", "raf",
+                "svg", "svgz", "ico", "icon", "cur",
+                "psd", "psb", "ai", "eps", "indd", "cdr", "xcf", "sketch", "fig", "dwg", "dxf"
+            });
+
+            // 5. Videos & Movies
+            MergeExtensions(config, "VideoExts", new[]
+            {
+                "mp4", "m4v", "mkv", "avi", "mov", "wmv", "flv", "f4v", "webm",
+                "mpg", "mpeg", "mpe", "mpv", "m2v", "ts", "mts", "m2ts", "vob",
+                "3gp", "3g2", "ogv", "rm", "rmvb", "asf", "divx", "xvid", "h264", "h265", "hevc"
+            });
+
+            // 6. Audio & Music
+            MergeExtensions(config, "AudioExts", new[]
+            {
+                "mp3", "wav", "flac", "aac", "ogg", "oga", "m4a", "wma",
+                "alac", "ape", "opus", "aiff", "aif", "aifc", "dsd", "dsf", "dff",
+                "mid", "midi", "ac3", "eac3", "dts", "dtshd", "mka", "ra", "amr",
+                "m3u", "m3u8", "pls"
+            });
+
+            // Dynamically combine all categorized extensions across all category lists AND any active rule conditions
+            var allSorted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var categoryKeys = new[] { "ProgramExts", "DocumentExts", "ArchiveExts", "PictureExts", "VideoExts", "AudioExts" };
+            foreach (var key in categoryKeys)
+            {
+                if (config.KeywordLists.TryGetValue(key, out var list))
                 {
-                    if (!docExts.Contains(ext, StringComparer.OrdinalIgnoreCase)) docExts.Add(ext);
+                    foreach (var ext in list)
+                    {
+                        if (!string.IsNullOrWhiteSpace(ext))
+                            allSorted.Add(ext.Trim().TrimStart('.'));
+                    }
                 }
             }
 
-            if (!config.KeywordLists.ContainsKey("ArchiveExts"))
+            // Also inspect any other active rules that specify extension filters
+            if (config.Rules != null)
             {
-                config.KeywordLists["ArchiveExts"] = new List<string> { "zip", "rar", "7z", "tar", "gz", "bz2", "tgz" };
-            }
-            else
-            {
-                var archExts = config.KeywordLists["ArchiveExts"];
-                var required = new[] { "zip", "rar", "7z", "tar", "gz", "bz2", "tgz" };
-                foreach (var ext in required)
+                foreach (var rule in config.Rules.Where(r => r.Enabled && r.Id != "rule-inplace-others"))
                 {
-                    if (!archExts.Contains(ext, StringComparer.OrdinalIgnoreCase)) archExts.Add(ext);
+                    if (rule.Conditions == null) continue;
+                    foreach (var cond in rule.Conditions.Where(c => c.Target == RuleTarget.Extension))
+                    {
+                        if (cond.Operator == ConditionOperator.Equals || cond.Operator == ConditionOperator.MatchesWildcard)
+                        {
+                            if (!string.IsNullOrWhiteSpace(cond.Value))
+                                allSorted.Add(cond.Value.Trim().TrimStart('.').TrimStart('*').TrimStart('.'));
+                        }
+                        else if (cond.Operator == ConditionOperator.InKeywordList)
+                        {
+                            string listName = !string.IsNullOrEmpty(cond.KeywordListName) ? cond.KeywordListName : cond.Value;
+                            if (!string.IsNullOrEmpty(listName) && config.KeywordLists.TryGetValue(listName, out var customList))
+                            {
+                                foreach (var ext in customList)
+                                {
+                                    if (!string.IsNullOrWhiteSpace(ext))
+                                        allSorted.Add(ext.Trim().TrimStart('.'));
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            if (!config.KeywordLists.ContainsKey("PictureExts"))
-            {
-                config.KeywordLists["PictureExts"] = new List<string> { "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "psd" };
-            }
-
-            if (!config.KeywordLists.ContainsKey("VideoExts"))
-            {
-                config.KeywordLists["VideoExts"] = new List<string> { "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm" };
-            }
-
-            if (!config.KeywordLists.ContainsKey("AudioExts"))
-            {
-                config.KeywordLists["AudioExts"] = new List<string> { "mp3", "wav", "flac", "aac", "ogg", "m4a", "wma" };
-            }
+            config.KeywordLists["AllSortedExts"] = allSorted.OrderBy(x => x).ToList();
         }
 
         public static List<Rule> GetInPlaceOrganizationPresets()
@@ -499,6 +579,40 @@ namespace FileOrgy.Core.Services
                             DestinationTemplate = @"{directory}\Audio",
                             ConflictResolution = ConflictResolution.AutoRenameUnique
                         }
+                    }
+                },
+                GetInPlaceOthersPreset()
+            };
+        }
+
+        public static Rule GetInPlaceOthersPreset()
+        {
+            return new Rule
+            {
+                Id = "rule-inplace-others",
+                Name = "In-Place: Other Files",
+                Description = "Organizes any remaining unclassified files whose file type does not match any current sorting filter into an Others folder",
+                Enabled = true,
+                Priority = 16,
+                StopOnFirstMatch = true,
+                MatchLogic = ConditionMatchLogic.All,
+                Conditions = new List<RuleCondition>
+                {
+                    new RuleCondition
+                    {
+                        Target = RuleTarget.Extension,
+                        Operator = ConditionOperator.NotInKeywordList,
+                        KeywordListName = "AllSortedExts"
+                    }
+                },
+                Steps = new List<WorkflowStep>
+                {
+                    new WorkflowStep
+                    {
+                        StepType = StepType.MoveFile,
+                        Name = "Move to In-Place Others Folder",
+                        DestinationTemplate = @"{directory}\Others",
+                        ConflictResolution = ConflictResolution.AutoRenameUnique
                     }
                 }
             };

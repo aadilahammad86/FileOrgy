@@ -177,7 +177,8 @@
                         <Button Content="{Binding DashboardVM.ToggleMonitoringButtonText}"
                                 Command="{Binding DashboardVM.ToggleMonitoringCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"/>
-                        <Button Content="⚡ Scan Folder Now..." Command="{Binding DashboardVM.ScanFolderNowCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Content="⚡ Scan Monitored Folders" Command="{Binding DashboardVM.ScanMonitoredFoldersCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"/>
+                        <Button Content="📂 Browse &amp; Scan..." Command="{Binding DashboardVM.ScanCustomFolderCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -349,7 +350,7 @@
                                 <Button Content="📋 Duplicate" Command="{Binding DuplicateRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="✏️ Edit Rule" Command="{Binding EditRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
-                                <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio)"/>
+                                <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others)"/>
                                 <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
                             </StackPanel>
                         </Grid>
@@ -532,6 +533,7 @@
                                 <TextBlock Text="Application Settings &amp; Resource Optimization" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" Margin="0,0,0,16"/>
 
                                 <CheckBox Content="Launch FileOrgy on Windows Startup (in system tray)" IsChecked="{Binding StartWithWindows}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
+                                <CheckBox Content="Automatically scan monitored folders on startup (organizes files that arrived while offline)" IsChecked="{Binding ScanOnStartup}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
                                 <CheckBox Content="Minimize to System Tray when closing window" IsChecked="{Binding MinimizeToTrayOnClose}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
                                 <CheckBox Content="Show desktop balloon notifications on file operations" IsChecked="{Binding ShowDesktopNotifications}" Foreground="#F8FAFC" Margin="0,0,0,20"/>
 

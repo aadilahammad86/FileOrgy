@@ -76,16 +76,21 @@ namespace FileOrgy.App.ViewModels
 
         public ICommand ToggleMonitoringCommand { get; }
         public ICommand ScanFolderNowCommand { get; }
+        public ICommand ScanMonitoredFoldersCommand { get; }
+        public ICommand ScanCustomFolderCommand { get; }
         public ICommand ClearActivityCommand { get; }
 
         public event Action? RequestScanFolder;
+        public event Action? RequestScanMonitoredFolders;
 
         public DashboardViewModel(FileOrgyOrchestrator orchestrator)
         {
             _orchestrator = orchestrator;
 
             ToggleMonitoringCommand = new RelayCommand(() => IsMonitoring = !IsMonitoring);
-            ScanFolderNowCommand = new RelayCommand(() => RequestScanFolder?.Invoke());
+            ScanMonitoredFoldersCommand = new RelayCommand(() => RequestScanMonitoredFolders?.Invoke());
+            ScanCustomFolderCommand = new RelayCommand(() => RequestScanFolder?.Invoke());
+            ScanFolderNowCommand = new RelayCommand(() => RequestScanMonitoredFolders?.Invoke());
             ClearActivityCommand = new RelayCommand(() =>
             {
                 RecentActivity.Clear();

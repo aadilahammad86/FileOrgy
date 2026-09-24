@@ -311,8 +311,9 @@ Amount: $1,250.00";
             Assert.True(config.KeywordLists.ContainsKey("PictureExts"));
             Assert.True(config.KeywordLists.ContainsKey("VideoExts"));
             Assert.True(config.KeywordLists.ContainsKey("AudioExts"));
+            Assert.True(config.KeywordLists.ContainsKey("AllSortedExts"));
 
-            Assert.Equal(6, presets.Count);
+            Assert.Equal(7, presets.Count);
             Assert.All(presets, rule =>
             {
                 Assert.Single(rule.Steps);
@@ -404,7 +405,7 @@ Amount: $1,250.00";
             configService.CurrentConfig.Rules.Clear();
 
             configService.LoadInPlaceOrganizationPresets(overwriteExisting: false);
-            Assert.Equal(6, configService.CurrentConfig.Rules.Count);
+            Assert.Equal(7, configService.CurrentConfig.Rules.Count);
 
             // Modify a preset rule
             configService.CurrentConfig.Rules[0].Name = "Modified In-Place Rule";
@@ -416,15 +417,142 @@ Amount: $1,250.00";
 
             // Load with overwrite = true -> should reset back to standard
             configService.LoadInPlaceOrganizationPresets(overwriteExisting: true);
-            Assert.Equal(6, configService.CurrentConfig.Rules.Count);
+            Assert.Equal(7, configService.CurrentConfig.Rules.Count);
             Assert.NotEqual("Modified In-Place Rule", configService.CurrentConfig.Rules[0].Name);
 
-            // Verify priorities are monotonically increasing from 1 to 6
-            for (int i = 0; i < 6; i++)
+            // Verify priorities are monotonically increasing from 1 to 7
+            for (int i = 0; i < 7; i++)
             {
                 Assert.Equal(i + 1, configService.CurrentConfig.Rules[i].Priority);
             }
         }
+
+        [Fact]
+        public async Task FileOrgyOrchestrator_ScanAllWatchFoldersAsync_ProcessesAllActiveFolders()
+        {
+            string configPath = Path.Combine(_testTempDir, "scan_all_config.json");
+            var configService = new ConfigService(configPath);
+            configService.CurrentConfig.Settings.ScanOnStartup = false; // Disable auto scan for test
+
+            string watchDir1 = Path.Combine(_testTempDir, "watch1");
+            string watchDir2 = Path.Combine(_testTempDir, "watch2");
+            Directory.CreateDirectory(watchDir1);
+            Directory.CreateDirectory(watchDir2);
+
+            configService.CurrentConfig.WatchFolders.Clear();
+            configService.CurrentConfig.WatchFolders.Add(new WatchFolderConfig
+            {
+                Id = "wf1",
+                FolderPath = watchDir1,
+                Enabled = true
+            });
+            configService.CurrentConfig.WatchFolders.Add(new WatchFolderConfig
+            {
+                Id = "wf2",
+                FolderPath = watchDir2,
+                Enabled = true
+            });
+
+            using var orchestrator = new FileOrgyOrchestrator(configService);
+
+            // Create test files
+            File.WriteAllText(Path.Combine(watchDir1, "test1.txt"), "content 1");
+            File.WriteAllText(Path.Combine(watchDir2, "test2.txt"), "content 2");
+
+            int detectedCount = 0;
+            orchestrator.MonitorService.FileDetected += (s, e) => Interlocked.Increment(ref detectedCount);
+
+            await orchestrator.ScanAllWatchFoldersAsync();
+
+            Assert.Equal(2, detectedCount);
+        }
+
+        [Fact]
+        public async Task InPlace_OtherFiles_Rule_SortsUnclassifiedFilesIntoOthersFolder()
+        {
+            string configPath = Path.Combine(_testTempDir, "others_config.json");
+            var configService = new ConfigService(configPath);
+            configService.CurrentConfig.Rules.Clear();
+            configService.LoadInPlaceOrganizationPresets();
+
+            string watchDir = Path.Combine(_testTempDir, "others_watch");
+            Directory.CreateDirectory(watchDir);
+
+            // Create files across each expanded category
+            string docFile = Path.Combine(watchDir, "report.docx");
+            string confFile = Path.Combine(watchDir, "settings.conf");
+            string csvFile = Path.Combine(watchDir, "data.csv");
+            string scriptFile = Path.Combine(watchDir, "install.ps1");
+            string isoFile = Path.Combine(watchDir, "windows.iso");
+            string tarFile = Path.Combine(watchDir, "backup.tar.gz");
+            string webpFile = Path.Combine(watchDir, "banner.webp");
+            string videoFile = Path.Combine(watchDir, "stream.m4v");
+            string audioFile = Path.Combine(watchDir, "podcast.opus");
+
+            // Create unclassified files that must go into Others
+            string outFile = Path.Combine(watchDir, "firmware.out");
+            string romFile = Path.Combine(watchDir, "bios.rom");
+            string xyzFile = Path.Combine(watchDir, "test.xyz");
+            string noExtFile = Path.Combine(watchDir, "LICENSE");
+
+            File.WriteAllText(docFile, "doc content");
+            File.WriteAllText(confFile, "conf content");
+            File.WriteAllText(csvFile, "csv content");
+            File.WriteAllText(scriptFile, "script content");
+            File.WriteAllText(isoFile, "iso content");
+            File.WriteAllText(tarFile, "tar content");
+            File.WriteAllText(webpFile, "webp content");
+            File.WriteAllText(videoFile, "video content");
+            File.WriteAllText(audioFile, "audio content");
+            File.WriteAllText(outFile, "out content");
+            File.WriteAllText(romFile, "rom content");
+            File.WriteAllText(xyzFile, "xyz content");
+            File.WriteAllText(noExtFile, "license content");
+
+            using var orchestrator = new FileOrgyOrchestrator(configService);
+
+            await orchestrator.ProcessFileAsync(docFile);
+            await orchestrator.ProcessFileAsync(confFile);
+            await orchestrator.ProcessFileAsync(csvFile);
+            await orchestrator.ProcessFileAsync(scriptFile);
+            await orchestrator.ProcessFileAsync(isoFile);
+            await orchestrator.ProcessFileAsync(tarFile);
+            await orchestrator.ProcessFileAsync(webpFile);
+            await orchestrator.ProcessFileAsync(videoFile);
+            await orchestrator.ProcessFileAsync(audioFile);
+            await orchestrator.ProcessFileAsync(outFile);
+            await orchestrator.ProcessFileAsync(romFile);
+            await orchestrator.ProcessFileAsync(xyzFile);
+            await orchestrator.ProcessFileAsync(noExtFile);
+
+            // Verify Documents
+            Assert.True(File.Exists(Path.Combine(watchDir, "Documents", "report.docx")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Documents", "settings.conf")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Documents", "data.csv")));
+
+            // Verify Programs
+            Assert.True(File.Exists(Path.Combine(watchDir, "Programs", "install.ps1")));
+
+            // Verify Compressed
+            Assert.True(File.Exists(Path.Combine(watchDir, "Compressed", "windows.iso")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Compressed", "backup.tar.gz")));
+
+            // Verify Pictures
+            Assert.True(File.Exists(Path.Combine(watchDir, "Pictures", "banner.webp")));
+
+            // Verify Videos
+            Assert.True(File.Exists(Path.Combine(watchDir, "Videos", "stream.m4v")));
+
+            // Verify Audio
+            Assert.True(File.Exists(Path.Combine(watchDir, "Audio", "podcast.opus")));
+
+            // Verify Others (all files not in above sorting filters)
+            Assert.True(File.Exists(Path.Combine(watchDir, "Others", "firmware.out")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Others", "bios.rom")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Others", "test.xyz")));
+            Assert.True(File.Exists(Path.Combine(watchDir, "Others", "LICENSE")));
+        }
     }
 }
+
 

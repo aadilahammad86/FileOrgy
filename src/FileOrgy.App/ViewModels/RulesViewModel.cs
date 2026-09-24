@@ -159,7 +159,7 @@ namespace FileOrgy.App.ViewModels
             else
             {
                 var result = System.Windows.MessageBox.Show(
-                    "Load In-Place Organization Presets?\n\nThis will add rules to automatically sort files into Programs, Documents, Compressed, Pictures, Videos, and Audio folders directly inside each monitored directory using dynamic in-place relocation.",
+                    "Load In-Place Organization Presets?\n\nThis will add rules to automatically sort files into Programs, Documents, Compressed, Pictures, Videos, Audio, and Others folders directly inside each monitored directory using dynamic in-place relocation.",
                     "Load In-Place Presets",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -176,13 +176,14 @@ namespace FileOrgy.App.ViewModels
                                                     r.Id.StartsWith("preset-inplace-", StringComparison.OrdinalIgnoreCase)) ?? Rules.FirstOrDefault();
 
             System.Windows.MessageBox.Show(
-                "6 In-Place Organization Presets loaded successfully:\n\n" +
+                "7 In-Place Organization Presets loaded successfully:\n\n" +
                 "• In-Place: Programs & Installers (.exe, .msi, .dmg)\n" +
                 "• In-Place: Documents & Tables (.pdf, .docx, .doc, .xlsx, .csv, .txt, etc.)\n" +
                 "• In-Place: Compressed Archives (.zip, .rar, .7z, .tar, .gz, etc.)\n" +
                 "• In-Place: Pictures & Graphics (.jpg, .jpeg, .png, .gif, .svg, etc.)\n" +
                 "• In-Place: Videos & Movies (.mp4, .mkv, .avi, .mov, etc.)\n" +
-                "• In-Place: Audio & Music (.mp3, .wav, .flac, .m4a, etc.)\n\n" +
+                "• In-Place: Audio & Music (.mp3, .wav, .flac, .m4a, etc.)\n" +
+                "• In-Place: Other Files (Any unclassified file type not matching above filters)\n\n" +
                 "Target subfolders are organized in-place under each monitored directory.",
                 "Presets Loaded",
                 MessageBoxButton.OK,

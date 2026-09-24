@@ -33,10 +33,12 @@ namespace FileOrgy.App
             _trayService = new TrayService(this, _orchestrator);
             _trayService.OpenRequested += RestoreWindow;
             _trayService.ScanRequested += PromptScanFolder;
+            _trayService.ScanMonitoredRequested += ScanMonitoredFolders;
             _trayService.ExitRequested += ExitApplication;
 
             _viewModel.RequestEditRuleModal += OpenRuleEditor;
             _viewModel.RequestScanAnyFolder += PromptScanFolder;
+            _viewModel.RequestScanMonitoredFolders += ScanMonitoredFolders;
         }
 
         private void InitializeIcon()
@@ -120,6 +122,24 @@ namespace FileOrgy.App
                 await _orchestrator.ScanFolderNowAsync(scanConfig);
                 _trayService.ShowNotification("Folder Scan Initiated", $"Scanning '{scanConfig.DisplayName}' root items for automation rules.");
             }
+        }
+
+        private async void ScanMonitoredFolders()
+        {
+            var activeFolders = _orchestrator.ConfigService.CurrentConfig.WatchFolders.Where(w => w.Enabled).ToList();
+            if (activeFolders.Count == 0)
+            {
+                System.Windows.MessageBox.Show(
+                    "No monitored folders are currently active. Please configure and enable at least one folder in the 'Monitored Folders' tab.",
+                    "No Active Folders",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            _trayService.ShowNotification("Scanning Monitored Folders", $"Scanning {activeFolders.Count} active monitored folder(s) for unorganized files...");
+            await _orchestrator.ScanAllWatchFoldersAsync();
+            _trayService.ShowNotification("Scan Complete", "Finished scanning active monitored folders.");
         }
 
         public async Task ScanDirectoryAsync(string folderPath)

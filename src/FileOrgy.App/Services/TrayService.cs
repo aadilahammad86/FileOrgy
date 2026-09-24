@@ -19,6 +19,7 @@ namespace FileOrgy.App.Services
 
         public event Action? OpenRequested;
         public event Action? ScanRequested;
+        public event Action? ScanMonitoredRequested;
         public event Action? ExitRequested;
 
         public TrayService(Window mainWindow, FileOrgyOrchestrator orchestrator)
@@ -44,7 +45,10 @@ namespace FileOrgy.App.Services
             _pauseMenuItem = new ToolStripMenuItem("Pause Monitoring", null, (s, e) => TogglePause());
             contextMenu.Items.Add(_pauseMenuItem);
 
-            var scanItem = new ToolStripMenuItem("Scan Folder Now...", null, (s, e) => ScanRequested?.Invoke());
+            var scanMonitoredItem = new ToolStripMenuItem("⚡ Scan Monitored Folders", null, (s, e) => ScanMonitoredRequested?.Invoke());
+            contextMenu.Items.Add(scanMonitoredItem);
+
+            var scanItem = new ToolStripMenuItem("Scan Custom Folder...", null, (s, e) => ScanRequested?.Invoke());
             contextMenu.Items.Add(scanItem);
 
             contextMenu.Items.Add(new ToolStripSeparator());
