@@ -147,25 +147,51 @@
                                             <!-- Target -->
                                             <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,6">
                                                 <TextBlock Text="Target" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}" Background="#1F2937" Foreground="#F9FAFB"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}"/>
                                             </StackPanel>
 
                                             <!-- Operator -->
                                             <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,6,6">
                                                 <TextBlock Text="Operator" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}" Background="#1F2937" Foreground="#F9FAFB"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}"/>
                                             </StackPanel>
 
                                             <!-- Remove Condition Button -->
                                             <Button Grid.Row="0" Grid.Column="2" Content="✕"
                                                     Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}"
-                                                    Background="#EF4444" Foreground="White" Width="24" Height="24" VerticalAlignment="Bottom" Margin="0,0,0,6" BorderThickness="0" Cursor="Hand"/>
+                                                    Background="#EF4444" Foreground="White" Width="26" Height="26" VerticalAlignment="Bottom" Margin="0,0,0,6" BorderThickness="0" Cursor="Hand"
+                                                    ToolTip="Remove condition">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
 
-                                            <!-- Value -->
-                                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,6,0">
-                                                <TextBlock Text="Value / Pattern / List Name" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Background="#1F2937" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6"/>
+                                            <!-- Keyword List Selector (Shown when Operator is InKeywordList / NotInKeywordList) -->
+                                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,6,0"
+                                                        Visibility="{Binding IsKeywordListVisible, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Keyword List Name" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                                <ComboBox ItemsSource="{Binding AvailableKeywordLists}"
+                                                          Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                          SelectedItem="{Binding Value}"
+                                                          IsEditable="True"/>
+                                            </StackPanel>
+
+                                            <!-- Value / Pattern Input (Shown for other operators) -->
+                                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,6,0"
+                                                        Visibility="{Binding IsValueVisible, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Value / Pattern / Expression" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Background="#1F2937" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6" FontSize="13"/>
+                                            </StackPanel>
+
+                                            <!-- Case Sensitivity Option -->
+                                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                                                        Visibility="{Binding IsValueVisible, Converter={StaticResource BoolToVis}}">
+                                                <CheckBox Content="Case sensitive match" IsChecked="{Binding CaseSensitive}" Foreground="#9CA3AF" FontSize="11"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>

@@ -12,6 +12,9 @@ namespace FileOrgy.App.ViewModels
     public class RuleConditionItemViewModel : ViewModelBase
     {
         private readonly RuleCondition _condition;
+        private readonly List<string> _availableKeywordLists;
+
+        public IReadOnlyList<string> AvailableKeywordLists => _availableKeywordLists;
 
         public RuleTarget Target
         {
@@ -34,34 +37,65 @@ namespace FileOrgy.App.ViewModels
                 if (_condition.Operator != value)
                 {
                     _condition.Operator = value;
+                    if (IsKeywordListVisible)
+                    {
+                        if (string.IsNullOrEmpty(_condition.KeywordListName) && !string.IsNullOrEmpty(_condition.Value))
+                        {
+                            _condition.KeywordListName = _condition.Value;
+                        }
+                        else if (!string.IsNullOrEmpty(_condition.KeywordListName) && string.IsNullOrEmpty(_condition.Value))
+                        {
+                            _condition.Value = _condition.KeywordListName;
+                        }
+                        else if (string.IsNullOrEmpty(_condition.KeywordListName) && string.IsNullOrEmpty(_condition.Value) && _availableKeywordLists.Count > 0)
+                        {
+                            _condition.KeywordListName = _availableKeywordLists[0];
+                            _condition.Value = _availableKeywordLists[0];
+                        }
+                    }
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IsKeywordListVisible));
+                    OnPropertyChanged(nameof(IsValueVisible));
+                    OnPropertyChanged(nameof(Value));
+                    OnPropertyChanged(nameof(KeywordListName));
                 }
             }
         }
 
         public string Value
         {
-            get => _condition.Value;
+            get => IsKeywordListVisible && !string.IsNullOrEmpty(_condition.KeywordListName)
+                ? _condition.KeywordListName
+                : _condition.Value;
             set
             {
-                if (_condition.Value != value)
+                var val = value ?? string.Empty;
+                if (_condition.Value != val || _condition.KeywordListName != val)
                 {
-                    _condition.Value = value;
+                    _condition.Value = val;
+                    if (IsKeywordListVisible)
+                    {
+                        _condition.KeywordListName = val;
+                    }
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(KeywordListName));
                 }
             }
         }
 
         public string? KeywordListName
         {
-            get => _condition.KeywordListName;
+            get => !string.IsNullOrEmpty(_condition.KeywordListName)
+                ? _condition.KeywordListName
+                : _condition.Value;
             set
             {
                 if (_condition.KeywordListName != value)
                 {
                     _condition.KeywordListName = value;
+                    _condition.Value = value ?? string.Empty;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(Value));
                 }
             }
         }
@@ -82,11 +116,27 @@ namespace FileOrgy.App.ViewModels
         public bool IsKeywordListVisible =>
             Operator == ConditionOperator.InKeywordList || Operator == ConditionOperator.NotInKeywordList;
 
+        public bool IsValueVisible => !IsKeywordListVisible;
+
         public RuleCondition Model => _condition;
 
-        public RuleConditionItemViewModel(RuleCondition condition)
+        public RuleConditionItemViewModel(RuleCondition condition, List<string>? availableKeywordLists = null)
         {
             _condition = condition;
+            _availableKeywordLists = availableKeywordLists ?? new List<string>();
+
+            // Ensure KeywordListName and Value are synchronized for keyword list matching operators
+            if (IsKeywordListVisible)
+            {
+                if (string.IsNullOrEmpty(_condition.Value) && !string.IsNullOrEmpty(_condition.KeywordListName))
+                {
+                    _condition.Value = _condition.KeywordListName;
+                }
+                else if (string.IsNullOrEmpty(_condition.KeywordListName) && !string.IsNullOrEmpty(_condition.Value))
+                {
+                    _condition.KeywordListName = _condition.Value;
+                }
+            }
         }
     }
 
@@ -441,7 +491,7 @@ namespace FileOrgy.App.ViewModels
 
         public ObservableCollection<RuleConditionItemViewModel> Conditions { get; } = new();
         public ObservableCollection<WorkflowStepItemViewModel> Steps { get; } = new();
-        public List<string> AvailableKeywordLists => _configService.CurrentConfig.KeywordLists.Keys.ToList();
+        public List<string> AvailableKeywordLists => _configService?.CurrentConfig?.KeywordLists?.Keys?.OrderBy(k => k).ToList() ?? new List<string>();
 
         public RuleConditionItemViewModel? SelectedCondition
         {
@@ -471,7 +521,7 @@ namespace FileOrgy.App.ViewModels
 
             foreach (var cond in _rule.Conditions)
             {
-                Conditions.Add(new RuleConditionItemViewModel(cond));
+                Conditions.Add(new RuleConditionItemViewModel(cond, AvailableKeywordLists));
             }
             SelectedCondition = Conditions.FirstOrDefault();
 
@@ -498,7 +548,7 @@ namespace FileOrgy.App.ViewModels
                 Value = "pdf"
             };
             _rule.Conditions.Add(newCond);
-            var vm = new RuleConditionItemViewModel(newCond);
+            var vm = new RuleConditionItemViewModel(newCond, AvailableKeywordLists);
             Conditions.Add(vm);
             SelectedCondition = vm;
         }

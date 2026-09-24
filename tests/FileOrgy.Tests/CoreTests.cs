@@ -552,6 +552,55 @@ Amount: $1,250.00";
             Assert.True(File.Exists(Path.Combine(watchDir, "Others", "test.xyz")));
             Assert.True(File.Exists(Path.Combine(watchDir, "Others", "LICENSE")));
         }
+
+        [Fact]
+        public void ConditionEvaluator_EvaluatesKeywordList_WithKeywordListNameOrValue()
+        {
+            var keywordLists = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["DocumentExts"] = new List<string> { ".pdf", ".docx" },
+                ["FinancialKeywords"] = new List<string> { "invoice", "receipt" }
+            };
+            var globalVars = new Dictionary<string, string>();
+
+            // Test condition with KeywordListName populated and Value empty
+            var cond1 = new RuleCondition
+            {
+                Target = RuleTarget.Extension,
+                Operator = ConditionOperator.InKeywordList,
+                KeywordListName = "DocumentExts",
+                Value = string.Empty
+            };
+
+            var contextDoc = new WorkflowContext("invoice.pdf");
+            Assert.True(ConditionEvaluator.EvaluateCondition(cond1, contextDoc, keywordLists, globalVars));
+
+            var contextImg = new WorkflowContext("photo.jpg");
+            Assert.False(ConditionEvaluator.EvaluateCondition(cond1, contextImg, keywordLists, globalVars));
+
+            // Test condition with Value populated and KeywordListName empty
+            var cond2 = new RuleCondition
+            {
+                Target = RuleTarget.Extension,
+                Operator = ConditionOperator.InKeywordList,
+                KeywordListName = null,
+                Value = "DocumentExts"
+            };
+            Assert.True(ConditionEvaluator.EvaluateCondition(cond2, contextDoc, keywordLists, globalVars));
+
+            // Test content keyword matching
+            var condContent = new RuleCondition
+            {
+                Target = RuleTarget.ExtractedContent,
+                Operator = ConditionOperator.InKeywordList,
+                KeywordListName = "FinancialKeywords"
+            };
+            contextDoc.ExtractedContent = "Payment for Invoice #12345 received.";
+            Assert.True(ConditionEvaluator.EvaluateCondition(condContent, contextDoc, keywordLists, globalVars));
+
+            contextDoc.ExtractedContent = "Meeting notes from Monday morning.";
+            Assert.False(ConditionEvaluator.EvaluateCondition(condContent, contextDoc, keywordLists, globalVars));
+        }
     }
 }
 
