@@ -9,7 +9,7 @@
 #define MyAppVersion "1.0.0"
 #endif
 #define MyAppPublisher "FileOrgy"
-#define MyAppURL "https://github.com/almadinaabudhabi/FileOrgy"
+#define MyAppURL "https://github.com/aadilahammad86/FileOrgy"
 #define MyAppExeName "FileOrgy.exe"
 
 [Setup]

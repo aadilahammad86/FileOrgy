@@ -39,6 +39,12 @@ namespace FileOrgy.App
             _viewModel.RequestEditRuleModal += OpenRuleEditor;
             _viewModel.RequestScanAnyFolder += PromptScanFolder;
             _viewModel.RequestScanMonitoredFolders += ScanMonitoredFolders;
+            _viewModel.RequestShowUpdateModal += ShowUpdateDialog;
+
+            Loaded += (s, e) =>
+            {
+                _ = _viewModel.CheckForUpdatesInBackgroundAsync();
+            };
         }
 
         private void InitializeIcon()
@@ -102,6 +108,16 @@ namespace FileOrgy.App
                 Icon = Icon
             };
             guide.ShowDialog();
+        }
+
+        private void ShowUpdateDialog(UpdateInfo info, UpdateService updateService)
+        {
+            var updateDialog = new UpdateDialog(info, updateService)
+            {
+                Owner = this,
+                Icon = Icon
+            };
+            updateDialog.ShowDialog();
         }
 
         private async void PromptScanFolder()

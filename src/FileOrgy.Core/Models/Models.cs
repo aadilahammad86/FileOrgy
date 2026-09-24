@@ -216,6 +216,7 @@ namespace FileOrgy.Core.Models
         public int MaxConcurrentOperations { get; set; } = 2;
         public int LogRetentionDays { get; set; } = 30;
         public bool DarkMode { get; set; } = true;
+        public bool AutoCheckForUpdates { get; set; } = true;
     }
 
     public class AppConfiguration
