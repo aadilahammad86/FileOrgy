@@ -350,6 +350,7 @@
                                 <Button Content="📋 Duplicate" Command="{Binding DuplicateRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="✏️ Edit Rule" Command="{Binding EditRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
+                                <Button Content="💡 Rule Guide" Click="OnOpenRuleGuideClick" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Open the interactive Automation Rules &amp; Workflows Guide"/>
                                 <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others)"/>
                                 <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
                             </StackPanel>

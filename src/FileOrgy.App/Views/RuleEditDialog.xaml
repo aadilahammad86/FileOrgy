@@ -51,6 +51,35 @@
                 <x:Type TypeName="models:ArchivePostAction"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <converters:EnumFriendlyNameConverter x:Key="EnumFriendlyNameConverter"/>
+
+        <Style x:Key="TokenChipStyle" TargetType="Button">
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#818CF8"/>
+            <Setter Property="BorderBrush" Value="#374151"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="7,3"/>
+            <Setter Property="Margin" Value="0,0,5,4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Consolas, monospace"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#312E81"/>
+                    <Setter Property="Foreground" Value="#C7D2FE"/>
+                    <Setter Property="BorderBrush" Value="#6366F1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="20">
@@ -74,8 +103,17 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="💡 Rule Guide &amp; Tutorial" Click="OnGuideClick" Padding="12,6" Background="#312E81" Foreground="#C7D2FE" BorderBrush="#4338CA" BorderThickness="1" Cursor="Hand" Margin="0,0,16,0" ToolTip="Open the interactive guide, rules explanation, and tokens cheatsheet">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                     <CheckBox Content="Rule Enabled" IsChecked="{Binding Enabled}" Foreground="#F9FAFB" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                    <CheckBox Content="Stop on match" IsChecked="{Binding StopOnFirstMatch}" Foreground="#9CA3AF" VerticalAlignment="Center"/>
+                    <CheckBox Content="Stop on match" IsChecked="{Binding StopOnFirstMatch}" Foreground="#9CA3AF" VerticalAlignment="Center" ToolTip="If matched, stops lower priority rules from processing this file"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -147,13 +185,25 @@
                                             <!-- Target -->
                                             <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,6">
                                                 <TextBlock Text="Target" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource RuleTargetValues}}" SelectedItem="{Binding Target}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
                                             </StackPanel>
 
                                             <!-- Operator -->
                                             <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,6,6">
                                                 <TextBlock Text="Operator" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}"/>
+                                                <ComboBox ItemsSource="{Binding Source={StaticResource ConditionOperatorValues}}" SelectedItem="{Binding Operator}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
                                             </StackPanel>
 
                                             <!-- Remove Condition Button -->
@@ -179,6 +229,7 @@
                                                           Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedItem="{Binding Value}"
                                                           IsEditable="True"/>
+                                                <TextBlock Text="{Binding KeywordListPreview}" FontSize="11" Foreground="#38BDF8" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" ToolTip="{Binding KeywordListPreview}"/>
                                             </StackPanel>
 
                                             <!-- Value / Pattern Input (Shown for other operators) -->
@@ -213,13 +264,17 @@
                     </Grid.RowDefinitions>
 
                     <!-- Steps Header -->
-                    <Grid Grid.Row="0" Margin="0,0,0,8">
-                        <TextBlock Text="Workflow Execution Sequence" FontSize="14" FontWeight="SemiBold" Foreground="#F9FAFB" VerticalAlignment="Center"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="▲ Up" Command="{Binding MoveStepUpCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand"/>
-                            <Button Content="▼ Down" Command="{Binding MoveStepDownCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand"/>
-                            <Button Content="✕ Remove" Command="{Binding RemoveStepCommand}" CommandParameter="{Binding SelectedStep}" Padding="8,4" Background="#EF4444" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
-                            <Button Content="+ Add Step" Command="{Binding AddStepCommand}" Padding="10,4" Background="#10B981" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Workflow Execution Sequence" FontSize="14" FontWeight="SemiBold" Foreground="#F9FAFB" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="▲ Up" Command="{Binding MoveStepUpCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand" ToolTip="Move selected step earlier in sequence"/>
+                            <Button Content="▼ Down" Command="{Binding MoveStepDownCommand}" Padding="8,4" Background="#374151" Foreground="White" BorderThickness="0" Margin="0,0,4,0" Cursor="Hand" ToolTip="Move selected step later in sequence"/>
+                            <Button Content="✕ Remove" Command="{Binding RemoveStepCommand}" CommandParameter="{Binding SelectedStep}" Padding="8,4" Background="#EF4444" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand" ToolTip="Remove selected step"/>
+                            <Button Content="+ Add Step" Command="{Binding AddStepCommand}" Padding="10,4" Background="#10B981" Foreground="White" BorderThickness="0" Cursor="Hand" ToolTip="Add a new workflow action step"/>
                         </StackPanel>
                     </Grid>
 
@@ -236,7 +291,7 @@
                                     <TextBlock Grid.Column="0" Text="●" Foreground="#6366F1" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#F9FAFB"/>
-                                        <TextBlock Text="{Binding StepType}" FontSize="11" Foreground="#9CA3AF"/>
+                                        <TextBlock Text="{Binding StepType, Converter={StaticResource EnumFriendlyNameConverter}}" FontSize="11" Foreground="#9CA3AF"/>
                                     </StackPanel>
                                     <CheckBox Grid.Column="2" IsChecked="{Binding Enabled}" Content="Active" Foreground="#9CA3AF" VerticalAlignment="Center"/>
                                 </Grid>
@@ -258,7 +313,13 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,4,0">
                                     <TextBlock Text="Step Type" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource StepTypeValues}}" SelectedItem="{Binding StepType}" Background="#111827" Foreground="#F9FAFB"/>
+                                    <ComboBox ItemsSource="{Binding Source={StaticResource StepTypeValues}}" SelectedItem="{Binding StepType}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="4,0,0,0">
                                     <TextBlock Text="Step Name" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
@@ -268,41 +329,95 @@
 
                             <!-- Smart Rename Options -->
                             <StackPanel Visibility="{Binding IsRenameVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
-                                <TextBlock Text="Rename Pattern (Tokens: {doc_date:yyyy-MM-dd}, {basename}, {ext}, {var:Name}, {match:1}, {counter:001})" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                <TextBox Text="{Binding RenamePattern, UpdateSourceTrigger=PropertyChanged}" Background="#111827" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6"/>
-                                <Grid Margin="0,6,0,0">
+                                <TextBlock Text="Rename Pattern" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                <TextBox Text="{Binding RenamePattern, UpdateSourceTrigger=PropertyChanged}" Background="#111827" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6" FontSize="13"/>
+                                
+                                <!-- Token Chips -->
+                                <WrapPanel Margin="0,6,0,6">
+                                    <TextBlock Text="Insert Token:" FontSize="11" Foreground="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                    <Button Content="{}{basename}" Style="{StaticResource TokenChipStyle}" ToolTip="Original file name without extension" Command="{Binding AppendTokenCommand}" CommandParameter="{}{basename}"/>
+                                    <Button Content="{}{ext}" Style="{StaticResource TokenChipStyle}" ToolTip="File extension (without dot)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{ext}"/>
+                                    <Button Content="{}{dotext}" Style="{StaticResource TokenChipStyle}" ToolTip="File extension (with dot e.g. .pdf)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{dotext}"/>
+                                    <Button Content="{}{doc_date:yyyy-MM-dd}" Style="{StaticResource TokenChipStyle}" ToolTip="Extracted document/invoice date" Command="{Binding AppendTokenCommand}" CommandParameter="{}{doc_date:yyyy-MM-dd}"/>
+                                    <Button Content="{}{year}" Style="{StaticResource TokenChipStyle}" ToolTip="Current year (e.g. 2026)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{year}"/>
+                                    <Button Content="{}{month}" Style="{StaticResource TokenChipStyle}" ToolTip="Current month (01-12)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{month}"/>
+                                    <Button Content="{}{counter:001}" Style="{StaticResource TokenChipStyle}" ToolTip="Incrementing counter (001, 002...)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{counter:001}"/>
+                                </WrapPanel>
+
+                                <Grid Margin="0,2,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="1*"/>
                                         <ColumnDefinition Width="1*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,4,0">
                                         <TextBlock Text="Case Transform" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                        <ComboBox ItemsSource="{Binding Source={StaticResource CaseTransformValues}}" SelectedItem="{Binding CaseTransform}" Background="#111827" Foreground="#F9FAFB"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CaseTransformValues}}" SelectedItem="{Binding CaseTransform}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="4,0,0,0">
                                         <TextBlock Text="Conflict Resolution" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                        <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#F9FAFB"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
                                     </StackPanel>
                                 </Grid>
                             </StackPanel>
 
                             <!-- Move / Copy Options -->
                             <StackPanel Visibility="{Binding IsMoveOrCopyVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
-                                <TextBlock Text="Destination Path (Supports {doc_date:yyyy}, {var:Base}, etc.)" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                <TextBox Text="{Binding DestinationTemplate, UpdateSourceTrigger=PropertyChanged}" Background="#111827" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6"/>
-                                <StackPanel Margin="0,6,0,0">
+                                <TextBlock Text="Destination Path" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                <TextBox Text="{Binding DestinationTemplate, UpdateSourceTrigger=PropertyChanged}" Background="#111827" Foreground="#F9FAFB" BorderBrush="#4B5563" Padding="6" FontSize="13"/>
+                                
+                                <!-- Token Chips -->
+                                <WrapPanel Margin="0,6,0,6">
+                                    <TextBlock Text="Insert Path Token:" FontSize="11" Foreground="#9CA3AF" VerticalAlignment="Center" Margin="0,0,6,4"/>
+                                    <Button Content="{}{directory}" Style="{StaticResource TokenChipStyle}" ToolTip="Folder where the file was detected (e.g. Downloads)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{directory}"/>
+                                    <Button Content="{}{doc_date:yyyy}" Style="{StaticResource TokenChipStyle}" ToolTip="Document invoice year" Command="{Binding AppendTokenCommand}" CommandParameter="{}{doc_date:yyyy}"/>
+                                    <Button Content="{}{year}" Style="{StaticResource TokenChipStyle}" ToolTip="Current year (e.g. 2026)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{year}"/>
+                                    <Button Content="{}{month}" Style="{StaticResource TokenChipStyle}" ToolTip="Current month (01-12)" Command="{Binding AppendTokenCommand}" CommandParameter="{}{month}"/>
+                                    <Button Content="{}{basename}" Style="{StaticResource TokenChipStyle}" ToolTip="File name without extension" Command="{Binding AppendTokenCommand}" CommandParameter="{}{basename}"/>
+                                </WrapPanel>
+
+                                <StackPanel Margin="0,2,0,0">
                                     <TextBlock Text="Conflict Resolution" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}" Background="#111827" Foreground="#F9FAFB"/>
+                                    <ComboBox ItemsSource="{Binding Source={StaticResource ConflictResolutionValues}}" SelectedItem="{Binding ConflictResolution}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
                             </StackPanel>
 
                             <!-- Archive Extraction Options -->
                             <StackPanel Visibility="{Binding IsArchiveVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,8">
                                 <TextBlock Text="Extraction Destination" FontSize="11" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchiveDestValues}}" SelectedItem="{Binding ExtractDestination}" Background="#111827" Foreground="#F9FAFB"/>
+                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchiveDestValues}}" SelectedItem="{Binding ExtractDestination}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
 
                                 <TextBlock Text="After Extraction Action" FontSize="11" Foreground="#9CA3AF" Margin="0,6,0,2"/>
-                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchivePostActionValues}}" SelectedItem="{Binding ArchivePostAction}" Background="#111827" Foreground="#F9FAFB"/>
+                                <ComboBox ItemsSource="{Binding Source={StaticResource ArchivePostActionValues}}" SelectedItem="{Binding ArchivePostAction}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource EnumFriendlyNameConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
 
                                 <CheckBox Content="Automatically organize extracted files with pipeline" IsChecked="{Binding EnqueueExtractedFiles}" Foreground="#F9FAFB" Margin="0,8,0,0"/>
                             </StackPanel>

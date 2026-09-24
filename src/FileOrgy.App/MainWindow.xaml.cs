@@ -94,6 +94,16 @@ namespace FileOrgy.App
             }
         }
 
+        private void OnOpenRuleGuideClick(object sender, RoutedEventArgs e)
+        {
+            var guide = new FileOrgy.App.Views.RuleGuideDialog
+            {
+                Owner = this,
+                Icon = Icon
+            };
+            guide.ShowDialog();
+        }
+
         private async void PromptScanFolder()
         {
             using var fbd = new FolderBrowserDialog

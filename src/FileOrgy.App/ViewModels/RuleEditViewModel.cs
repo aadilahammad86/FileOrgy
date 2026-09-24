@@ -13,8 +13,28 @@ namespace FileOrgy.App.ViewModels
     {
         private readonly RuleCondition _condition;
         private readonly List<string> _availableKeywordLists;
+        private readonly IReadOnlyDictionary<string, List<string>>? _keywordListsDict;
 
         public IReadOnlyList<string> AvailableKeywordLists => _availableKeywordLists;
+
+        public string KeywordListPreview
+        {
+            get
+            {
+                if (!IsKeywordListVisible) return string.Empty;
+                var key = !string.IsNullOrEmpty(KeywordListName) ? KeywordListName : Value;
+                if (string.IsNullOrWhiteSpace(key)) return "Select a keyword list from the dropdown";
+
+                if (_keywordListsDict != null && _keywordListsDict.TryGetValue(key, out var list) && list.Count > 0)
+                {
+                    var preview = string.Join(", ", list.Take(8));
+                    var extra = list.Count > 8 ? $" (+{list.Count - 8} more)" : "";
+                    return $"Matches {list.Count} items: {preview}{extra}";
+                }
+
+                return $"List: {key}";
+            }
+        }
 
         public RuleTarget Target
         {
@@ -58,6 +78,7 @@ namespace FileOrgy.App.ViewModels
                     OnPropertyChanged(nameof(IsValueVisible));
                     OnPropertyChanged(nameof(Value));
                     OnPropertyChanged(nameof(KeywordListName));
+                    OnPropertyChanged(nameof(KeywordListPreview));
                 }
             }
         }
@@ -79,6 +100,7 @@ namespace FileOrgy.App.ViewModels
                     }
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(KeywordListName));
+                    OnPropertyChanged(nameof(KeywordListPreview));
                 }
             }
         }
@@ -96,6 +118,7 @@ namespace FileOrgy.App.ViewModels
                     _condition.Value = value ?? string.Empty;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(Value));
+                    OnPropertyChanged(nameof(KeywordListPreview));
                 }
             }
         }
@@ -120,10 +143,14 @@ namespace FileOrgy.App.ViewModels
 
         public RuleCondition Model => _condition;
 
-        public RuleConditionItemViewModel(RuleCondition condition, List<string>? availableKeywordLists = null)
+        public RuleConditionItemViewModel(
+            RuleCondition condition,
+            List<string>? availableKeywordLists = null,
+            IReadOnlyDictionary<string, List<string>>? keywordListsDict = null)
         {
             _condition = condition;
             _availableKeywordLists = availableKeywordLists ?? new List<string>();
+            _keywordListsDict = keywordListsDict;
 
             // Ensure KeywordListName and Value are synchronized for keyword list matching operators
             if (IsKeywordListVisible)
@@ -384,16 +411,35 @@ namespace FileOrgy.App.ViewModels
 
         public WorkflowStep Model => _step;
 
+        public ICommand AppendTokenCommand { get; }
+
         public WorkflowStepItemViewModel(WorkflowStep step)
         {
             _step = step;
+            AppendTokenCommand = new RelayCommand(param =>
+            {
+                if (param is string token && !string.IsNullOrEmpty(token))
+                {
+                    if (IsRenameVisible)
+                    {
+                        RenamePattern = string.IsNullOrEmpty(RenamePattern) ? token : RenamePattern + token;
+                    }
+                    else if (IsMoveOrCopyVisible)
+                    {
+                        var prefix = string.IsNullOrEmpty(DestinationTemplate)
+                            ? ""
+                            : (DestinationTemplate.EndsWith("\\") || DestinationTemplate.EndsWith("/") ? "" : "\\");
+                        DestinationTemplate = (DestinationTemplate ?? string.Empty) + prefix + token;
+                    }
+                }
+            });
         }
     }
 
     public class RuleEditViewModel : ViewModelBase
     {
         private readonly Rule _rule;
-        private readonly ConfigService _configService;
+        private readonly ConfigService? _configService;
         private RuleConditionItemViewModel? _selectedCondition;
         private WorkflowStepItemViewModel? _selectedStep;
 
@@ -519,9 +565,11 @@ namespace FileOrgy.App.ViewModels
             _rule = rule;
             _configService = configService;
 
+            var keywordDict = _configService?.CurrentConfig?.KeywordLists;
+
             foreach (var cond in _rule.Conditions)
             {
-                Conditions.Add(new RuleConditionItemViewModel(cond, AvailableKeywordLists));
+                Conditions.Add(new RuleConditionItemViewModel(cond, AvailableKeywordLists, keywordDict));
             }
             SelectedCondition = Conditions.FirstOrDefault();
 
@@ -548,7 +596,7 @@ namespace FileOrgy.App.ViewModels
                 Value = "pdf"
             };
             _rule.Conditions.Add(newCond);
-            var vm = new RuleConditionItemViewModel(newCond, AvailableKeywordLists);
+            var vm = new RuleConditionItemViewModel(newCond, AvailableKeywordLists, _configService?.CurrentConfig?.KeywordLists);
             Conditions.Add(vm);
             SelectedCondition = vm;
         }

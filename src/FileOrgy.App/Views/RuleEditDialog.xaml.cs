@@ -14,6 +14,16 @@ namespace FileOrgy.App.Views
             DataContext = viewModel;
         }
 
+        private void OnGuideClick(object sender, RoutedEventArgs e)
+        {
+            var guide = new RuleGuideDialog
+            {
+                Owner = this,
+                Icon = Icon
+            };
+            guide.ShowDialog();
+        }
+
         private void OnSaveClick(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
