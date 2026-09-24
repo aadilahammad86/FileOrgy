@@ -20,9 +20,9 @@
         <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrush"/>
         <converters:LogLevelToBrushConverter x:Key="LogLevelToBrush"/>
 
-        <!-- Custom Dark ScrollBar -->
-        <Style TargetType="{x:Type ScrollViewer}">
-            <Setter Property="OverridesDefaultStyle" Value="False"/>
+        <Style x:Key="DataGridTextElementStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
 
         <!-- Modern Button Style -->
@@ -269,24 +269,26 @@
                                 </Grid>
 
                                 <DataGrid Grid.Row="1" ItemsSource="{Binding RecentActivity}" AutoGenerateColumns="False" IsReadOnly="True"
-                                          Background="#0F172A" BorderBrush="#334155" HeadersVisibility="Column"
+                                          Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                                          HeadersVisibility="Column" RowHeaderWidth="0"
+                                          ColumnHeaderHeight="38" RowHeight="36"
                                           GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#1E293B"
                                           RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="80"/>
+                                        <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
                                         <DataGridTemplateColumn Header="Level" Width="90">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                                    <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
                                                     </Border>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Event" Binding="{Binding EventType}" Width="120"/>
-                                        <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="140"/>
-                                        <DataGridTextColumn Header="Details / Message" Binding="{Binding Details}" Width="*"/>
-                                        <DataGridTextColumn Header="Duration" Binding="{Binding DurationMs, StringFormat={}{0}ms}" Width="75"/>
+                                        <DataGridTextColumn Header="Event" Binding="{Binding EventType}" Width="120" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                        <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="150" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                        <DataGridTextColumn Header="Details / Message" Binding="{Binding Details}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                        <DataGridTextColumn Header="Duration" Binding="{Binding DurationMs, StringFormat={}{0}ms}" Width="80" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -451,11 +453,13 @@
                                 </Grid>
 
                                 <DataGrid Grid.Row="1" ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedVariable}"
-                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155"
+                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                                          HeadersVisibility="Column" RowHeaderWidth="0"
+                                          ColumnHeaderHeight="38" RowHeight="36"
                                           RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Variable Key ({var:Key})" Binding="{Binding Key}" Width="160"/>
-                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*"/>
+                                        <DataGridTextColumn Header="Variable Key ({var:Key})" Binding="{Binding Key}" Width="160" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -478,11 +482,13 @@
                                 </Grid>
 
                                 <DataGrid Grid.Row="1" ItemsSource="{Binding KeywordLists}" SelectedItem="{Binding SelectedKeywordList}"
-                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155"
+                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                                          HeadersVisibility="Column" RowHeaderWidth="0"
+                                          ColumnHeaderHeight="38" RowHeight="36"
                                           RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="List Name" Binding="{Binding Name}" Width="140"/>
-                                        <DataGridTextColumn Header="Keywords (comma separated)" Binding="{Binding KeywordsText}" Width="*"/>
+                                        <DataGridTextColumn Header="List Name" Binding="{Binding Name}" Width="140" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                        <DataGridTextColumn Header="Keywords (comma separated)" Binding="{Binding KeywordsText}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>
@@ -530,7 +536,9 @@
 
                         <!-- Logs Table -->
                         <DataGrid Grid.Row="1" ItemsSource="{Binding Logs}" SelectedItem="{Binding SelectedLog}"
-                                  AutoGenerateColumns="False" IsReadOnly="True" Background="#0F172A" BorderBrush="#334155"
+                                  AutoGenerateColumns="False" IsReadOnly="True" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                                  HeadersVisibility="Column" RowHeaderWidth="0"
+                                  ColumnHeaderHeight="38" RowHeight="36"
                                   RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
                             <DataGrid.ContextMenu>
                                 <ContextMenu Background="#1E293B" Foreground="#F8FAFC">
@@ -540,21 +548,21 @@
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="135"/>
-                                <DataGridTemplateColumn Header="Status" Width="85">
+                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="145" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                <DataGridTemplateColumn Header="Status" Width="90">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                            <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
                                             </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Event Type" Binding="{Binding EventType}" Width="110"/>
-                                <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="130"/>
-                                <DataGridTextColumn Header="Source" Binding="{Binding SourcePath}" Width="160"/>
-                                <DataGridTextColumn Header="Destination" Binding="{Binding DestinationPath}" Width="160"/>
-                                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+                                <DataGridTextColumn Header="Event Type" Binding="{Binding EventType}" Width="120" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="140" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                <DataGridTextColumn Header="Source" Binding="{Binding SourcePath}" Width="170" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                <DataGridTextColumn Header="Destination" Binding="{Binding DestinationPath}" Width="170" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
+                                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
