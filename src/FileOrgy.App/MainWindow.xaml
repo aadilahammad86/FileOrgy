@@ -291,8 +291,12 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0" Margin="0,0,0,16">
-                            <TextBlock Text="Monitored Directories" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Monitored Directories" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button Content="⚡ Scan Selected" Command="{Binding ScanFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
                                 <Button Content="🗑 Remove Folder" Command="{Binding RemoveFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
                                 <Button Content="+ Add Watch Folder" Command="{Binding AddFolderCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
@@ -339,24 +343,42 @@
                     <Grid DataContext="{Binding RulesVM}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="0,0,0,16">
-                            <TextBlock Text="Automation Rules &amp; Multi-Step Workflows" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <!-- Row 0: Top bar -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Automation Rules &amp; Multi-Step Workflows" FontSize="18" FontWeight="SemiBold" Foreground="#F8FAFC" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="Define conditions, triggers, and automated execution sequences for your files" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+
+                            <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Content="💡 Rule Guide" Click="OnOpenRuleGuideClick" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Open the interactive Automation Rules &amp; Workflows Guide"/>
+                                <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others)"/>
+                                <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+                            </WrapPanel>
+                        </Grid>
+
+                        <!-- Row 1: Rule Action Toolbar -->
+                        <Border Grid.Row="1" Background="#162032" CornerRadius="8" Padding="8,6" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,12">
+                            <WrapPanel VerticalAlignment="Center">
+                                <TextBlock Text="Selected Rule:" Foreground="#94A3B8" VerticalAlignment="Center" Margin="6,0,12,0" FontSize="12" FontWeight="SemiBold"/>
                                 <Button Content="▲ Move Up" Command="{Binding MoveUpCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="▼ Move Down" Command="{Binding MoveDownCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="📋 Duplicate" Command="{Binding DuplicateRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
                                 <Button Content="✏️ Edit Rule" Command="{Binding EditRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
-                                <Button Content="💡 Rule Guide" Click="OnOpenRuleGuideClick" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Open the interactive Automation Rules &amp; Workflows Guide"/>
-                                <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others)"/>
-                                <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
-                            </StackPanel>
-                        </Grid>
+                                <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                            </WrapPanel>
+                        </Border>
 
-                        <ListBox Grid.Row="1" ItemsSource="{Binding Rules}" SelectedItem="{Binding SelectedRule}"
+                        <ListBox Grid.Row="2" ItemsSource="{Binding Rules}" SelectedItem="{Binding SelectedRule}"
                                  Background="Transparent" BorderThickness="0">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
