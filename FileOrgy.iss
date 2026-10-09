@@ -88,11 +88,11 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: s
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Registry]
-; 1. Windows Startup with Minimized / Tray toggle (Registers for Current User to guarantee reliable startup without UAC blocking)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --tray"; Tasks: autostart and startminimized; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart and not startminimized; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --tray"; Tasks: autostart and startminimized; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart and not startminimized; Flags: uninsdeletevalue
+; 1. Windows Startup with Minimized / Tray toggle
+; Standard non-elevated startup uses HKCU Run key (Windows Userinit/Explorer supports this reliably).
+; Note: When runasadmin is active, Windows blocks the Run key, so Task Scheduler is used below instead.
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --tray"; Tasks: autostart and startminimized and not runasadmin; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart and not startminimized and not runasadmin; Flags: uninsdeletevalue
 
 ; 2. Always Run As Administrator (~ RUNASADMIN) - Deleted if not explicitly enabled
 Root: HKA; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"; ValueType: string; ValueName: "{app}\{#MyAppExeName}"; ValueData: "~ RUNASADMIN"; Tasks: runasadmin; Flags: uninsdeletevalue
@@ -109,4 +109,14 @@ Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}"; V
 Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" --scan ""%V"""; Tasks: contextmenu; Flags: uninsdeletekey
 
 [Run]
+; When autostart AND runasadmin are both selected: Register with Highest Privileges via Task Scheduler.
+; This bypasses the Windows logon UAC suppression block that drops standard Run registry keys.
+Filename: "{sys}\schtasks.exe"; Parameters: "/create /tn ""{#MyAppName}_ElevatedAutoStart"" /tr ""\""{app}\{#MyAppExeName}\"" --tray"" /sc onlogon /rl HIGHEST /f"; Tasks: autostart and startminimized and runasadmin; Flags: runhidden
+Filename: "{sys}\schtasks.exe"; Parameters: "/create /tn ""{#MyAppName}_ElevatedAutoStart"" /tr ""\""{app}\{#MyAppExeName}\"""" /sc onlogon /rl HIGHEST /f"; Tasks: autostart and not startminimized and runasadmin; Flags: runhidden
+Filename: "{sys}\schtasks.exe"; Parameters: "/delete /tn ""{#MyAppName}_ElevatedAutoStart"" /f"; Tasks: not runasadmin; Flags: runhidden
+
+; Post-install application launch
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec
+
+[UninstallRun]
+Filename: "{sys}\schtasks.exe"; Parameters: "/delete /tn ""{#MyAppName}_ElevatedAutoStart"" /f"; Flags: runhidden

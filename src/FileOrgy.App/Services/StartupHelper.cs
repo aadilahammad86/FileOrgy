@@ -10,11 +10,19 @@ namespace FileOrgy.App.Services
         private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string LayersKeyPath = @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers";
         private const string AppName = "FileOrgy";
+        private const string ElevatedTaskName = "FileOrgy_ElevatedAutoStart";
 
         public static bool IsStartupEnabled()
         {
             try
             {
+                // 1. Check if elevated autostart task exists in Task Scheduler
+                if (IsTaskSchedulerAutostartEnabled())
+                {
+                    return true;
+                }
+
+                // 2. Check standard registry Run key in HKCU
                 using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false);
                 var val = key?.GetValue(AppName)?.ToString();
                 if (string.IsNullOrWhiteSpace(val))
@@ -42,38 +50,136 @@ namespace FileOrgy.App.Services
             }
         }
 
+        private static bool IsTaskSchedulerAutostartEnabled()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = $"/query /tn \"{ElevatedTaskName}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var proc = Process.Start(psi);
+                if (proc != null)
+                {
+                    proc.WaitForExit(1500);
+                    return proc.ExitCode == 0;
+                }
+            }
+            catch { }
+            return false;
+        }
+
         public static void SetStartup(bool enable)
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
-                if (key == null) return;
+                string? exePath = GetBestExecutablePath();
 
                 if (enable)
                 {
-                    string? exePath = GetBestExecutablePath();
                     if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
                     {
-                        key.SetValue(AppName, $"\"{exePath}\" --tray");
+                        bool requiresElevation = IsElevatedOrFlagged(exePath);
 
-                        // Remove ~ RUNASADMIN from HKCU layers if present, as it blocks Windows startup
-                        try
+                        if (requiresElevation)
                         {
-                            using var layersKey = Registry.CurrentUser.OpenSubKey(LayersKeyPath, true);
-                            layersKey?.DeleteValue(exePath, false);
+                            // Elevated apps must launch via Task Scheduler (/RL HIGHEST)
+                            // because Windows logon silently drops elevated apps from Run keys.
+                            RegisterElevatedTask(exePath);
+
+                            // Clean any standard Run keys to prevent conflict
+                            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+                            key?.DeleteValue(AppName, false);
                         }
-                        catch { }
+                        else
+                        {
+                            // Standard apps use standard HKCU Run key
+                            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+                            key?.SetValue(AppName, $"\"{exePath}\" --tray");
+
+                            // Clean scheduled task if switching to standard
+                            DeleteElevatedTask();
+                        }
                     }
                 }
                 else
                 {
-                    key.DeleteValue(AppName, false);
+                    // Disable both registry and Task Scheduler
+                    using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+                    key?.DeleteValue(AppName, false);
+
+                    DeleteElevatedTask();
                 }
             }
             catch
             {
-                // Silently ignore registry permissions exceptions
+                // Silently ignore permissions exceptions
             }
+        }
+
+        private static bool IsElevatedOrFlagged(string exePath)
+        {
+            try
+            {
+                // Check if executable is flagged with ~ RUNASADMIN in HKCU or HKLM
+                using var cuLayers = Registry.CurrentUser.OpenSubKey(LayersKeyPath, false);
+                if (cuLayers?.GetValue(exePath)?.ToString()?.Contains("RUNASADMIN", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return true;
+                }
+
+                using var lmLayers = Registry.LocalMachine.OpenSubKey(LayersKeyPath, false);
+                if (lmLayers?.GetValue(exePath)?.ToString()?.Contains("RUNASADMIN", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return true;
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
+        private static void RegisterElevatedTask(string exePath)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = $"/create /tn \"{ElevatedTaskName}\" /tr \"\\\"{exePath}\\\" --tray\" /sc onlogon /rl HIGHEST /f",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var proc = Process.Start(psi);
+                proc?.WaitForExit(2000);
+            }
+            catch { }
+        }
+
+        private static void DeleteElevatedTask()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = $"/delete /tn \"{ElevatedTaskName}\" /f",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using var proc = Process.Start(psi);
+                proc?.WaitForExit(2000);
+            }
+            catch { }
         }
 
         private static string? GetBestExecutablePath()

@@ -487,3 +487,8 @@ $RECYCLE.BIN/
 dist/
 installer/
 *.exe
+
+# Reboot test output artifacts
+tests/reboot_status.json
+tests/*.lock
+
