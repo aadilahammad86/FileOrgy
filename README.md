@@ -320,7 +320,7 @@ Yes. FileOrgy is free and open source under the MIT License.
 No. FileOrgy uses Windows kernel change notifications instead of polling, so it uses 0% CPU while idle and about 18–25 MB of RAM.
 
 **Can it rename PDF invoices by date?**
-Yes. The built-in *Organize Invoices & Receipts* rule reads the date inside PDF, Word, and Excel files and renames them like `2026-09-14_invoice.pdf`, then files them into `Invoices6 9`.
+Yes. The built-in *Organize Invoices & Receipts* rule reads the date inside PDF, Word, and Excel files and renames them like `2026-09-14_invoice.pdf`, then files them into `Invoices\2026\09`.
 
 **Will it delete my files?**
 Only if you create a cleanup rule, and even then files go to the Windows Recycle Bin by default so you can restore them.
