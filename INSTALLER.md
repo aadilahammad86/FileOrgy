@@ -1,13 +1,14 @@
 # FileOrgy: Windows Setup Installer & Deployment Guide
 
-Welcome to the **FileOrgy Setup & Deployment Guide**. This document outlines how to install, configure, silently deploy, and cleanly uninstall FileOrgy using the native Windows Setup executable (`FileOrgy-Setup-v1.0.0.exe`).
+Welcome to the **FileOrgy Setup & Deployment Guide**. This document outlines how to install, configure, silently deploy, and cleanly uninstall FileOrgy using the native Windows Setup executable (`FileOrgy-Setup.exe` / `FileOrgy-Setup-vX.Y.Z.exe`), and how in-app updates work.
 
 ---
 
 ## 1. Overview & Setup Architecture
 
 FileOrgy is packaged using an ultra-lean, modern **Inno Setup 6** installer compiler:
-* **Installer Binary:** `installer\FileOrgy-Setup-v1.0.0.exe` (~95.5 MB)
+* **Installer Binary:** `FileOrgy-Setup-vX.Y.Z.exe` (plus a `FileOrgy-Setup.exe` copy that always points at the latest), attached to every [GitHub Release](https://github.com/aadilahammad86/FileOrgy/releases/latest). The version is stamped by CI via `ISCC.exe /DMyAppVersion=X.Y.Z`; local builds without that switch fall back to `1.0.0`.
+* **Portable Build:** `FileOrgy-vX.Y.Z-portable.zip` (self-contained single-file `win-x64`, no installer).
 * **Target Architecture:** Windows 10 / 11 (64-bit x64)
 * **Compression:** LZMA2/Ultra64 solid compression
 * **Privilege Model:** Defaults to `PrivilegesRequired=admin` (machine-wide installation into `C:\Program Files\FileOrgy`, prompting for standard Windows UAC elevation on launch).
@@ -15,10 +16,10 @@ FileOrgy is packaged using an ultra-lean, modern **Inno Setup 6** installer comp
 
 ```mermaid
 flowchart TD
-    Setup["FileOrgy-Setup-v1.0.0.exe"] --> UAC["🛡️ Windows UAC Elevation Prompt"]
+    Setup["FileOrgy-Setup.exe"] --> UAC["🛡️ Windows UAC Elevation Prompt"]
     UAC --> AdminInstall["Install to {autopf}\\FileOrgy (Program Files)<br/>Machine-Wide Deployment"]
     AdminInstall --> Toggles["Select Configurable Tasks"]
-    Toggles --> T1["⚡ Windows Startup (HKCU\\Run)"]
+    Toggles --> T1["⚡ Windows Startup<br/>(HKCU\\Run, or Task Scheduler if Run as Admin)"]
     Toggles --> T2["🛡️ Run as Admin (~ RUNASADMIN via HKA)"]
     Toggles --> T3["🖱️ Explorer Context Menu (%1 / %V via HKA)"]
     Toggles --> T4["🔔 Start Minimized to Tray (--tray)"]
@@ -31,7 +32,7 @@ flowchart TD
 ## 2. Interactive Graphical Installation (GUI)
 
 1. **Download / Locate Installer:**  
-   Navigate to the `installer\` directory and double-click `FileOrgy-Setup-v1.0.0.exe`. Windows will display the User Account Control (UAC) prompt requesting administrative approval.
+   Download `FileOrgy-Setup.exe` from the [latest GitHub Release](https://github.com/aadilahammad86/FileOrgy/releases/latest) and double-click it. Windows will display the User Account Control (UAC) prompt requesting administrative approval.
 2. **Select Destination Location:**  
    * Standard machine-wide location: `C:\Program Files\FileOrgy`
    * Or specify a custom folder on your system.
@@ -50,13 +51,16 @@ During the **Select Additional Tasks** wizard step, the installer offers five di
 
 ### 1. ⚡ Windows Startup (`autostart`)
 * **Default:** Enabled (`checkedonce`)
-* **Technical Mechanism:** Writes to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+* **Technical Mechanism:**
+  * **Standard (default):** Writes a `FileOrgy` value to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+  * **When `runasadmin` is also selected:** Registers a Task Scheduler task named `FileOrgy_ElevatedAutoStart` (`/sc onlogon /rl HIGHEST`) instead of the `Run` key. See [Elevated Autostart](#elevated-autostart-via-task-scheduler) below.
 * **Behavior:** FileOrgy automatically launches whenever your Windows user logs in.
-* **Security & Isolation:** Does not affect other user accounts on the machine and requires zero administrative elevation.
+* **Security & Isolation:** The `Run` key entry only affects the installing user's account.
+* **Changing it later:** The **Launch FileOrgy on Windows Startup** checkbox in **⚙️ Settings** keeps both mechanisms in sync. It uses the `Run` key for a normal install and the elevated scheduled task when the executable is flagged `~ RUNASADMIN`, and removes whichever one is not in use.
 
 ### 2. 🔔 Start Minimized to System Tray (`startminimized`)
 * **Default:** Enabled (`checkedonce`)
-* **Technical Mechanism:** Appends the `--tray` argument to the Windows Startup command:
+* **Technical Mechanism:** Appends the `--tray` argument to the Windows Startup command (`Run` value or scheduled task action):
   ```ini
   "{app}\FileOrgy.exe" --tray
   ```
@@ -69,8 +73,8 @@ During the **Select Additional Tasks** wizard step, the installer offers five di
   * `HKA\Software\Classes\Directory\Background\shell\FileOrgy` (when right-clicking whitespace inside a folder)
 * **Behavior:** Adds the **"Organize with FileOrgy"** action with the application icon to Windows Explorer. Clicking this instantly triggers an in-place organizational scan on that specific directory.
 * **Arguments:**
-  * Folder item: `"{app}\FileOrgy.exe" "%1"`
-  * Folder background: `"{app}\FileOrgy.exe" "%V"`
+  * Folder item: `"{app}\FileOrgy.exe" --scan "%1"`
+  * Folder background: `"{app}\FileOrgy.exe" --scan "%V"`
 
 ### 4. 🛡️ Run as Administrator (`runasadmin`)
 * **Default:** Disabled (`unchecked`)
@@ -78,7 +82,7 @@ During the **Select Additional Tasks** wizard step, the installer offers five di
 * **Behavior:** Forces Windows to elevate FileOrgy to High Integrity on launch.
 * **Important Operational Notes:**
   > [!WARNING]
-  > **Startup Compatibility:** Windows Userinit/Explorer deliberately **blocks elevated applications from launching via the standard `Run` registry key at logon** to prevent silent UAC elevation. If you enable "Run as Administrator", FileOrgy will **not** launch automatically at Windows boot.
+  > **Startup Compatibility:** Windows Userinit/Explorer deliberately **blocks elevated applications from launching via the standard `Run` registry key at logon** to prevent silent UAC elevation. FileOrgy works around this: when both "Run as Administrator" and "Windows Startup" are selected, setup registers the elevated `FileOrgy_ElevatedAutoStart` scheduled task instead, so FileOrgy still starts at logon, elevated and without a UAC prompt.
   >
   > **UIPI Drag-and-Drop:** Windows User Interface Privilege Isolation (UIPI) blocks file drag-and-drop between medium-integrity Windows Explorer and high-integrity elevated applications.
   >
@@ -87,6 +91,27 @@ During the **Select Additional Tasks** wizard step, the installer offers five di
 ### 5. 🖥️ Desktop & Start Menu Shortcuts (`desktopicon`, `startmenuicon`)
 * **Start Menu (`startmenuicon`):** Enabled by default. Places `FileOrgy.lnk` in `{autoprograms}`.
 * **Desktop Shortcut (`desktopicon`):** Disabled by default. Places `FileOrgy.lnk` on `{autodesktop}`.
+
+---
+
+### Elevated Autostart via Task Scheduler
+
+| Selected tasks | Autostart mechanism |
+| :--- | :--- |
+| `autostart` (no `runasadmin`) | `HKCU\...\Run` value `FileOrgy` |
+| `autostart` + `runasadmin` | Scheduled task `FileOrgy_ElevatedAutoStart`, trigger **At log on**, **Run with highest privileges** |
+| `runasadmin` without `autostart`, or neither | No autostart; any leftover elevated task is deleted |
+
+The `--tray` argument is added in both cases when `startminimized` is selected.
+
+**Verify the task:**
+```powershell
+schtasks /query /tn "FileOrgy_ElevatedAutoStart" /v /fo list
+```
+
+**Repair an existing install manually:** if FileOrgy is flagged to run as administrator but doesn't start at logon (e.g. it was installed with an older version of setup), run `run_setup_as_admin.bat` from the repository root. It self-elevates via UAC and runs `tools\setup_elevated_autostart.ps1`, which removes the blocked `Run` entries and registers the elevated task. The script accepts `-TargetExe` (default `C:\Program Files\FileOrgy\FileOrgy.exe`) and `-WorkspaceDir`. The batch file calls the script by absolute path, so edit that path if your clone lives elsewhere.
+
+`tests\reboot_log_catcher.ps1` can be used to log whether FileOrgy actually came up after a reboot when debugging autostart.
 
 ---
 
@@ -114,19 +139,25 @@ For network administrators, unattended scripts, or automated provisioning (Power
 #### Recipe 1: Recommended Silent Background Install (Default Toggles)
 Installs headlessly with Windows Startup, Start Minimized to Tray, Context Menu, and Start Menu shortcut:
 ```powershell
-.\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+.\FileOrgy-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 ```
 
 #### Recipe 2: Portable / On-Demand Install (No Startup, Desktop Icon Only)
 Installs without Windows startup or tray mode, adding desktop and context menu shortcuts:
 ```powershell
-.\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /TASKS="desktopicon,startmenuicon,contextmenu"
+.\FileOrgy-Setup.exe /VERYSILENT /TASKS="desktopicon,startmenuicon,contextmenu"
 ```
 
 #### Recipe 3: Elevated Enterprise Admin Deployment
-Forces machine-wide administrative install to `C:\Program Files\FileOrgy` with full logging:
+Machine-wide install to `C:\Program Files\FileOrgy` with full logging:
 ```powershell
-.\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /ALLUSERS /DIR="C:\Program Files\FileOrgy" /LOG="C:\Temp\fileorgy_install.log"
+.\FileOrgy-Setup.exe /VERYSILENT /DIR="C:\Program Files\FileOrgy" /LOG="C:\Temp\fileorgy_install.log"
+```
+
+#### Recipe 4: Elevated Autostart (Monitoring Protected Folders)
+Runs FileOrgy as administrator and starts it elevated at logon via Task Scheduler:
+```powershell
+.\FileOrgy-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="startmenuicon,contextmenu,autostart,startminimized,runasadmin"
 ```
 
 ---
@@ -147,7 +178,7 @@ FileOrgy adheres to strict Windows uninstallation cleanliness standards, ensurin
 3. **Silent Scripted Uninstallation:**
    ```powershell
    # Uninstalls silently without user prompts
-   & "${env:LOCALAPPDATA}\Programs\FileOrgy\unins000.exe" /VERYSILENT /NORESTART
+   & "C:\Program Files\FileOrgy\unins000.exe" /VERYSILENT /NORESTART
    ```
 
 ---
@@ -159,6 +190,7 @@ The uninstaller distinguishes between **shared system keys** and **application-o
 | Component | Uninstaller Directive | Safety Action |
 | :--- | :--- | :--- |
 | **Startup (`Run`)** | `uninsdeletevalue` | Deletes *only* the `FileOrgy` value. Shared system `Run` key is completely untouched. |
+| **Elevated Autostart Task** | `[UninstallRun]` `schtasks /delete` | Deletes the `FileOrgy_ElevatedAutoStart` scheduled task if present. |
 | **Privileges (`AppCompatFlags`)** | `uninsdeletevalue` | Deletes *only* the FileOrgy executable layer. Shared Windows system keys are preserved. |
 | **Context Menu (Folder)** | `uninsdeletekey` | Recursively removes `Directory\shell\FileOrgy` and child command keys. |
 | **Context Menu (Background)** | `uninsdeletekey` | Recursively removes `Directory\Background\shell\FileOrgy` and child command keys. |
@@ -176,18 +208,14 @@ The uninstaller distinguishes between **shared system keys** and **application-o
 
 | Installation Mode | Privilege Level | Default Directory | Prompts for UAC on Launch? | Target Audience |
 | :--- | :--- | :--- | :---: | :--- |
-| **Per-User Mode** | Standard User (`PrivilegesRequired=lowest`) | `%LocalAppData%\Programs\FileOrgy` | **No** (Starts directly) | Standard desktop users, corporate accounts without local admin rights |
-| **All-Users Mode** | Administrator (`PrivilegesRequired=admin` / Run as Admin) | `C:\Program Files\FileOrgy` | **Yes** (UAC Shield dialog) | IT administrators, machine-wide multi-user deployment |
+| **Setup (installer)** | Administrator (`PrivilegesRequired=admin`) | `C:\Program Files\FileOrgy` | **Yes** (UAC Shield dialog when setup starts) | Everyone |
+| **App, default** | Standard user (Medium Integrity) | — | **No** | Monitoring user folders such as Downloads, Documents, Pictures |
+| **App, `runasadmin`** | Administrator (High Integrity, `~ RUNASADMIN`) | — | **Yes** on manual launch; **no** at logon (scheduled task runs with highest privileges) | Monitoring protected system folders |
 
 ---
 
-### Why the Setup Previously Did Not Ask for Admin Privileges
-
-When launching `FileOrgy-Setup-v1.0.0.exe`, users may notice that Windows did not initially show a User Account Control (UAC) prompt:
-1. **Per-User Packaging Standard:** The installer defaults to `PrivilegesRequired=lowest` and targets the user profile directory (`%LocalAppData%\Programs\FileOrgy`).
-2. **Zero System Hive Writes:** It writes configuration settings strictly to `HKEY_CURRENT_USER` (HKCU).
-3. **No UAC Interruption:** Because it does not modify protected system directories (`Program Files`, `Windows\System32`) or system-wide registry hives (`HKEY_LOCAL_MACHINE`), Windows grants execution without requiring an administrative credential prompt.
-4. **Corporate & Shared Environment Accessibility:** This guarantees standard non-administrator users can install, run, and update FileOrgy on work machines without requiring IT helpdesk intervention.
+> [!NOTE]
+> Early builds of setup used a per-user install (`PrivilegesRequired=lowest`, `%LocalAppData%\Programs\FileOrgy`) with no UAC prompt. Current releases always install machine-wide into Program Files.
 
 ---
 
@@ -236,8 +264,19 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
   > *"Do you want to allow this app to make changes to your device?"*
 * Once the user approves, FileOrgy launches with elevated administrator privileges cleanly with zero errors.
 
-#### 2. Running the Setup Directly as Administrator (Optional)
-If you prefer FileOrgy to be installed as an administrative, system-wide utility in `C:\Program Files\FileOrgy`:
-* Simply **right-click `FileOrgy-Setup-v1.0.0.exe`** and select **"Run as administrator"**.
-* Windows will prompt for UAC immediately upon launching the installer.
-* The installer runs at High Integrity throughout the entire setup process, installs to `Program Files`, and launches elevated child processes natively without any privilege transitions.
+#### 2. Elevated Autostart via Task Scheduler
+The `Run` registry key cannot start an elevated app at logon (see the warning under *Run as Administrator* in section 3). When `runasadmin` and `autostart` are both selected, setup registers the `FileOrgy_ElevatedAutoStart` task with `/rl HIGHEST` instead. See [Elevated Autostart via Task Scheduler](#elevated-autostart-via-task-scheduler).
+
+---
+
+## 7. In-App Updates
+
+FileOrgy updates itself from GitHub Releases. No separate updater service is installed.
+
+1. **Check:** On startup (if **Automatically check for updates on startup** is enabled in **⚙️ Settings**) or when you click **🔄 Check for Updates**, FileOrgy queries `https://api.github.com/repos/aadilahammad86/FileOrgy/releases/latest` and compares the release tag with its own version.
+2. **Notify:** If a newer version exists, a **🚀 Update** banner appears in the header (**Install** / **✕** to dismiss), and Settings shows **🚀 View & Install Update**.
+3. **Download:** The update dialog shows release notes and size, then downloads the best installer asset (preferring `FileOrgy-Setup-vX.Y.Z.exe`, then `FileOrgy-Setup.exe`) to `%TEMP%\FileOrgyUpdates\` with a progress bar.
+4. **Install:** FileOrgy launches the downloaded installer (UAC prompt, since setup requires admin) and exits so its files can be replaced. Your previous task selections are remembered by setup, and `%LocalAppData%\FileOrgy\` (config and logs) is untouched.
+
+> [!TIP]
+> Offline or behind a proxy? Download the installer manually from the [Releases page](https://github.com/aadilahammad86/FileOrgy/releases/latest) and run it over the existing install.

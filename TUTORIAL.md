@@ -14,7 +14,8 @@ If you just opened FileOrgy and are looking at your Downloads folder, here is wh
 >
 > **2. Real-Time vs. Existing Files:**
 > * **Real-Time Monitoring:** When monitoring is **Active**, FileOrgy automatically detects and organizes **new files** the moment they are written to the root of your folder.
-> * **Existing Files:** Files that were *already* in your Downloads folder before launching FileOrgy are **not moved automatically** until you trigger a **Scan**. This prevents accidental mass file reorganizations without your explicit intent.
+> * **Startup Catch-Up Scan:** By default, about 1.5 seconds after FileOrgy starts it scans all monitored folders once, so files that arrived while FileOrgy wasn't running are organized too. You can turn this off in **⚙️ Settings** (*Automatically scan monitored folders on startup*).
+> * **Manual Scans:** With the startup scan turned off, existing files are only organized when you trigger a **Scan** yourself.
 
 ```mermaid
 flowchart TD
@@ -29,9 +30,9 @@ flowchart TD
 ### Step-by-Step: Check & Organize Downloads Right Now
 
 1. **Open FileOrgy** on your screen.
-2. In the top-right header, click the **`⚡ Scan Folder Now...`** button.
+2. In the header, click **`⚡ Scan Monitored Folders`** to scan every watch folder, or **`📂 Browse & Scan...`** to pick any folder.
    *(Alternatively, switch to the **📁 Watch Folders** tab on the left, select **Downloads Folder**, and click **`⚡ Scan Selected`**).*
-3. Select your `Downloads` directory (or let it scan the default configured `Downloads Folder`).
+3. If you used **Browse & Scan**, select your `Downloads` directory.
 4. Switch to the **📊 Dashboard** or **📜 Activity History** tab to verify results:
    * **🟢 Success (Green):** The file matched an automation rule (e.g., an invoice PDF was renamed with its internal date and moved to `Documents\Invoices\2026\09`, or a ZIP archive was extracted and recycled).
    * **🔵 Evaluated / Kept in Place (Info):** The file did **not** match any active rule (e.g., an application installer `.exe`, Photoshop `.psd`, or project folder). FileOrgy safely leaves it untouched in your Downloads folder.
@@ -81,7 +82,10 @@ flowchart LR
 
 ### 📊 1. Dashboard Tab
 * **Monitoring Toggle Button:** Located in the top header (`Pause Monitoring` / `Resume Monitoring`). When paused, the indicator turns amber and incoming file events are queued.
-* **Top Header `⚡ Scan Folder Now...`:** Lets you pick any folder on your PC to immediately run all rules against.
+* **Header Scan Buttons:**
+  * **`⚡ Scan Monitored Folders`** runs all rules against every enabled watch folder.
+  * **`📂 Browse & Scan...`** lets you pick any folder on your PC to run all rules against.
+* **🚀 Update Banner:** When a newer FileOrgy release is available, a banner appears in the header. Click **Install** to open the update dialog or **✕** to dismiss it.
 * **KPI Metric Cards:**
   * **Total Files Processed:** Lifetime count of automated files.
   * **Operations Today:** Actions taken during the current calendar day.
@@ -104,6 +108,11 @@ flowchart LR
   * Configure conditions (Target: Name, Extension, File Size, Content, Document Date).
   * Add multi-step actions (Extract Date, Rename, Move, Extract Archive, Recycle).
 * **Duplicate Rule:** Clone an existing rule to quickly create variations.
+* **💡 Rule Guide:** Opens an interactive in-app guide that explains conditions, operators, workflow steps, and tokens with examples. The same content is available in [docs/RULES_AND_WORKFLOWS_GUIDE.md](docs/RULES_AND_WORKFLOWS_GUIDE.md).
+* **Editor Helpers:**
+  * Targets, operators, and step types use **plain-language labels** (with a short description of what each does).
+  * **Token chips** under rename and destination fields insert tokens like `{basename}` or `{doc_date:yyyy-MM-dd}` with one click.
+  * Choosing a keyword list shows a **live preview** of its entries, so you can see exactly which extensions or words will match.
 
 ### 🏷️ 4. Variables & Lists Tab
 * **Custom Variables:** Define reusable paths and text tags. For example:
@@ -139,17 +148,22 @@ flowchart LR
 * Log entries are buffered in-memory and flushed asynchronously every 2 seconds, keeping disk I/O at near-zero.
 
 ### ⚙️ 6. Settings Tab
-* **Start with Windows:** Enables silent system startup via Windows registry.
-* **Minimize to Tray on Close:** Closing the window with `[X]` keeps FileOrgy running silently in your system notification tray.
-* **Desktop Notifications:** Shows Windows toast notifications when files are organized.
+* **Launch FileOrgy on Windows Startup (in system tray):** Starts FileOrgy minimized at logon. Uses the `Run` registry key normally, or an elevated Task Scheduler task when FileOrgy is set to run as administrator (see [INSTALLER.md](INSTALLER.md#elevated-autostart-via-task-scheduler)).
+* **Automatically scan monitored folders on startup:** Organizes files that arrived while FileOrgy was offline (enabled by default).
+* **Minimize to System Tray when closing window:** Closing the window with `[X]` keeps FileOrgy running silently in your system notification tray.
+* **Show desktop balloon notifications:** Shows Windows notifications when files are organized.
 * **Global Debounce Delay:** Default time to wait for file writing to finish before triggering rules (default: `1200ms`).
 * **Max Concurrent Operations:** Controls background worker threads (default: 2 threads for bounded CPU impact).
+* **Software Updates & Repository Releases:**
+  * Shows the current version.
+  * **Automatically check for updates on startup** (enabled by default).
+  * **🔄 Check for Updates** checks GitHub Releases on demand; if a newer version exists, **🚀 View & Install Update** opens the update dialog with release notes, then downloads and launches the installer.
 
 ---
 
 ## 4. Built-In In-Place Organization System (The 7-Category Architecture)
 
-FileOrgy provides a turnkey **In-Place Organization Engine** engineered to maintain a tidy root directory without scattering your files across external drives or user libraries. When activated, it routes incoming or existing items directly into 7 structured subdirectories within the watched folder (e.g., `Downloads\[Category]\`).
+FileOrgy provides a turnkey **In-Place Organization Engine** engineered to maintain a tidy root directory without scattering your files across external drives or user libraries. When activated, it routes incoming or existing items directly into 7 structured subdirectories within the watched folder (e.g., `Downloads\[Category]\`), using the `{directory}` token (the folder the file is in) as the base path. The presets cover **250+ file types** out of the box.
 
 ```mermaid
 flowchart TD
@@ -174,22 +188,28 @@ flowchart TD
 | **🖼️ Pictures** | `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`, `.webp`, `.bmp`, `.ico` | Camera photos, screenshots, UI icons, `barcode.gif` |
 | **🎥 Videos** | `.mp4`, `.mkv`, `.mov`, `.avi`, `.webm`, `.wmv`, `.flv` | Screen recordings, webinars, video downloads, tutorials |
 | **🎵 Audio** | `.mp3`, `.wav`, `.flac`, `.m4a`, `.aac`, `.ogg`, `.wma` | Podcasts, music tracks, voice notes, sound effects |
-| **⚙️ Others** | `.gguf`, `.alloy`, `.ps1`, `.py`, `.json`, `.xml`, `.ini`, `.rdp`, Git repos, DB dumps | Quantized AI LLM weights (e.g. `Qwen3.5-9B.gguf`), Grafana configs, PowerShell scripts, `QuranApp-master/`, `DB18072026/` |
+| **⚙️ Others** | Everything not matched above: `.gguf`, `.alloy`, `.ps1`, `.py`, `.json`, `.xml`, `.ini`, `.rdp`, Git repos, DB dumps | Quantized AI LLM weights (e.g. `Qwen3.5-9B.gguf`), Grafana configs, PowerShell scripts, `QuranApp-master/`, `DB18072026/` |
+
+> [!NOTE]
+> **How "Others" works:** The **In-Place: Other Files** rule matches any file whose extension is **not** in the auto-generated `AllSortedExts` keyword list. FileOrgy rebuilds `AllSortedExts` from the extension filters of all your other enabled rules (keyword lists, `Equals`, and wildcard conditions). If you add a rule for `.psd`, those files stop landing in `Others` automatically.
 
 ---
 
 ### How to Trigger In-Place Organization
 
-You can trigger in-place organization across your watched folders in three ways:
+You can trigger in-place organization across your watched folders in five ways:
 
 1. **Top Header One-Click Scan:**
-   * In FileOrgy, click **`⚡ Scan Folder Now...`** in the top right.
-   * Select your target directory (e.g., `C:\Users\swalih\Downloads`).
+   * In FileOrgy, click **`⚡ Scan Monitored Folders`** in the header, or **`📂 Browse & Scan...`** and select a directory (e.g., `C:\Users\swalih\Downloads`).
    * FileOrgy evaluates all root items, matches rules, and routes them into the 7 category folders.
 2. **Dedicated Watch Folder Scan:**
    * Go to the **📁 Watch Folders** tab on the left.
    * Select **Downloads Folder** and click **`⚡ Scan Selected`**.
-3. **Autonomous Background Monitoring:**
+3. **Explorer Right-Click:**
+   * Right-click a folder (or empty space inside it) and choose **Organize with FileOrgy**. This runs `FileOrgy.exe --scan "<folder>"`.
+4. **Startup Catch-Up Scan:**
+   * With *Automatically scan monitored folders on startup* enabled, FileOrgy organizes every watch folder once each time it starts.
+5. **Autonomous Background Monitoring:**
    * When monitoring is active (green indicator), any new download or file dropped into the root of `Downloads` is debounced (waiting until browser writing completes) and automatically sorted into its corresponding category subfolder.
 
 ---
@@ -200,12 +220,12 @@ The in-place rules can be tailored to suit your specific workflow:
 
 * **Modifying Extensions in Keyword Lists:**
   * Open the **🏷️ Variables & Lists** tab.
-  * Select `DocumentExts`, `ArchiveExts`, or `MediaExts`.
-  * Add or remove extensions (e.g., add `psd` to `MediaExts` if you prefer Photoshop files in Pictures instead of Others).
+  * Select a category list such as `ProgramExts`, `DocumentExts`, `ArchiveExts`, `PictureExts`, `VideoExts`, or `AudioExts`.
+  * Add or remove extensions (e.g., add `psd` to `PictureExts` if you prefer Photoshop files in Pictures instead of Others). `AllSortedExts` updates automatically, so don't edit it by hand.
 * **Creating Category-Specific Routing Rules:**
   * Go to **⚡ Rules & Workflows** and click **`+ New Rule`**.
   * Use **Destination Templates** relative to the watched directory:
-    * `DestinationTemplate`: `{parent}\Programs` or `{parent}\Documents`
+    * `DestinationTemplate`: `{directory}\Programs` or `{directory}\Documents`
     * Or absolute: `C:\Users\swalih\Downloads\Programs`
 * **Preserving Atomic Folder Integrity:**
   * Keep `Include Subdirectories` **unchecked** on the Watch Folder. This ensures FileOrgy treats composite folders (like Git repos or software installs) as single units and never descends into them to scramble nested child files.
@@ -226,6 +246,8 @@ When creating Rename or Move steps, you can use dynamic tokens:
 | `{ext}` | Extension without leading period | `pdf` |
 | `{dotext}` | Extension with leading period | `.pdf` |
 | `{filename}` | Full original filename | `invoice_acme.pdf` |
+| `{parent}` | Name of the parent folder | `Downloads` |
+| `{directory}` | Full path of the folder containing the file | `C:\Users\...\Downloads` |
 | `{date:format}` | Current system date | `{date:yyyy-MM-dd}` ➔ `2026-09-05` |
 | `{doc_date:format}` | Extracted document / photo date | `{doc_date:yyyy-MM}` ➔ `2026-09` |
 | `{counter:001}` | Padded incremental sequence | `001`, `002`, `003` |
@@ -279,7 +301,8 @@ When you close FileOrgy, it minimizes to the Windows System Tray (near the clock
 * **Right-click the Tray Icon:**
   * **Open FileOrgy:** Opens the UI.
   * **Pause / Resume Monitoring:** Temporarily suspends folder hooks.
-  * **Scan Folder Now...:** Quickly organizes any folder without needing to open the full UI.
+  * **⚡ Scan Monitored Folders:** Runs all rules against every watch folder.
+  * **Scan Custom Folder...:** Quickly organizes any folder without needing to open the full UI.
   * **Exit FileOrgy:** Completely shuts down the application and releases all hooks.
 
 > [!TIP]

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FileOrgy – Free Automatic File Organizer for Windows 10 &amp; 11</title>
+<meta name="description" content="FileOrgy is a free, open-source automatic file organizer for Windows. Auto-sort your Downloads folder, rename PDF invoices by date, extract ZIP/RAR/7z archives and clean up old files in real time with 0% idle CPU.">
+<meta name="keywords" content="automatic file organizer windows, organize downloads folder automatically, file sorter, folder monitor, auto rename files, pdf invoice renamer, auto extract zip, dropit alternative, file juggler alternative, hazel for windows">
+<link rel="canonical" href="https://aadilahammad86.github.io/FileOrgy/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0b1020">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FileOrgy">
+<meta property="og:title" content="FileOrgy – Free Automatic File Organizer for Windows">
+<meta property="og:description" content="Auto-sort your Downloads folder, rename invoices by date, extract archives and clean up old files. Free and open source.">
+<meta property="og:url" content="https://aadilahammad86.github.io/FileOrgy/">
+<meta property="og:image" content="https://aadilahammad86.github.io/FileOrgy/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FileOrgy – Free Automatic File Organizer for Windows">
+<meta name="twitter:description" content="Auto-sort your Downloads folder, rename invoices by date, extract archives and clean up old files.">
+<meta name="twitter:image" content="https://aadilahammad86.github.io/FileOrgy/assets/social-preview.png">
+<link rel="icon" href="assets/favicon.png" type="image/png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "FileOrgy",
+  "description": "Free, open-source automatic file organizer for Windows. Watches folders in real time and sorts, renames, extracts and cleans up files using rules.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "url": "https://aadilahammad86.github.io/FileOrgy/",
+  "downloadUrl": "https://github.com/aadilahammad86/FileOrgy/releases/latest/download/FileOrgy-Setup.exe",
+  "softwareHelp": "https://github.com/aadilahammad86/FileOrgy/blob/master/TUTORIAL.md",
+  "license": "https://opensource.org/licenses/MIT",
+  "screenshot": "https://aadilahammad86.github.io/FileOrgy/assets/ui_overview.jpg",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Aadil Ahammad T", "url": "https://github.com/aadilahammad86" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "How do I automatically organize my Downloads folder on Windows?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Install FileOrgy and keep the default Downloads watch folder enabled. New downloads are sorted into Programs, Documents, Compressed, Pictures, Videos, Audio and Others subfolders as soon as they finish downloading. Click Scan Monitored Folders to organize files that are already there." } },
+    { "@type": "Question", "name": "Is FileOrgy free?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. FileOrgy is free and open source under the MIT License." } },
+    { "@type": "Question", "name": "Does FileOrgy slow down my PC?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. It uses Windows kernel change notifications instead of polling, so it uses 0% CPU while idle and about 18 to 25 MB of RAM." } },
+    { "@type": "Question", "name": "Can FileOrgy rename PDF invoices by date?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. The built-in Organize Invoices & Receipts rule reads the date inside PDF, Word and Excel files, renames them like 2026-09-14_invoice.pdf and files them into year and month folders." } },
+    { "@type": "Question", "name": "Will FileOrgy delete my files?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Only if you create a cleanup rule, and even then files go to the Windows Recycle Bin by default so you can restore them." } }
+  ]
+}
+</script>
+
+<style>
+:root {
+  --bg: #0b1020;
+  --bg-2: #111833;
+  --card: #151d3b;
+  --line: #26305a;
+  --text: #f1f5ff;
+  --muted: #9aa6c7;
+  --accent: #6366f1;
+  --accent-2: #a5b4fc;
+  --ok: #22c55e;
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+a { color: var(--accent-2); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+header.nav { position: sticky; top: 0; z-index: 10; background: rgba(11,16,32,.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; }
+.brand img { width: 28px; height: 28px; }
+.nav-links { display: flex; gap: 20px; font-size: 14px; }
+.nav-links a { color: var(--muted); text-decoration: none; }
+.nav-links a:hover { color: var(--text); }
+
+.hero { padding: 72px 0 40px; text-align: center; background: radial-gradient(1000px 420px at 50% -10%, rgba(99,102,241,.35), transparent 70%); }
+.pill { display: inline-block; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--accent-2); background: var(--bg-2); }
+h1 { font-size: clamp(32px, 5.5vw, 56px); line-height: 1.1; margin: 18px auto 16px; max-width: 860px; letter-spacing: -.02em; }
+h1 span { background: linear-gradient(90deg, #a5b4fc, #67e8f9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 720px; margin: 0 auto 28px; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 10px; font-weight: 600; text-decoration: none; }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 30px rgba(99,102,241,.45); }
+.btn-primary:hover { background: #5458e8; }
+.btn-ghost { border: 1px solid var(--line); color: var(--text); background: var(--bg-2); }
+.btn-ghost:hover { border-color: var(--accent-2); }
+.meta { margin-top: 14px; font-size: 13px; color: var(--muted); }
+.shot { margin: 44px auto 0; max-width: 1000px; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.shot img { display: block; width: 100%; height: auto; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 48px 0 0; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; text-align: center; }
+.stat b { display: block; font-size: 26px; color: var(--accent-2); }
+.stat span { font-size: 13px; color: var(--muted); }
+
+section { padding: 64px 0; }
+section h2 { font-size: clamp(26px, 3.5vw, 36px); margin: 0 0 10px; text-align: center; }
+section .sub { text-align: center; color: var(--muted); margin: 0 auto 36px; max-width: 640px; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.card .ico { font-size: 26px; }
+.card h3 { margin: 10px 0 6px; font-size: 18px; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+.cats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.cat { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 15px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); font-weight: 700; margin-bottom: 10px; }
+.step h3 { margin: 0 0 6px; font-size: 18px; }
+.step p { margin: 0; color: var(--muted); font-size: 15px; }
+code { background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: .9em; }
+
+.faq { max-width: 780px; margin: 0 auto; }
+details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { color: var(--muted); margin: 10px 0 0; }
+
+.final { text-align: center; background: linear-gradient(180deg, transparent, rgba(99,102,241,.15)); }
+footer { border-top: 1px solid var(--line); padding: 28px 0; color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+@media (max-width: 860px) {
+  .grid, .steps { grid-template-columns: 1fr 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .wrap { padding: 0 16px; }
+  .grid, .steps { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hero { padding-top: 48px; }
+  section { padding: 48px 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="assets/favicon.png" alt="" width="28" height="28">FileOrgy</a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/aadilahammad86/FileOrgy">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <span class="pill">Free &amp; open source · Windows 10 &amp; 11</span>
+      <h1>The <span>automatic file organizer</span> for Windows</h1>
+      <p class="lead">FileOrgy watches your Downloads folder and sorts every new file into place: installers, documents, archives, photos, videos and music. It renames invoices by date, extracts ZIPs and cleans up old clutter on its own.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/aadilahammad86/FileOrgy/releases/latest/download/FileOrgy-Setup.exe">⬇️ Download for Windows</a>
+        <a class="btn btn-ghost" href="https://github.com/aadilahammad86/FileOrgy">★ View on GitHub</a>
+      </div>
+      <p class="meta">Installer and portable ZIP · <a href="https://github.com/aadilahammad86/FileOrgy/releases/latest">All releases</a> · MIT License</p>
+
+      <div class="shot"><img src="assets/ui_overview.jpg" alt="FileOrgy dashboard showing files processed, watch folders and recent activity" width="1376" height="768" loading="eager"></div>
+
+      <div class="stats">
+        <div class="stat"><b>0%</b><span>idle CPU</span></div>
+        <div class="stat"><b>~20 MB</b><span>RAM</span></div>
+        <div class="stat"><b>250+</b><span>file types sorted</span></div>
+        <div class="stat"><b>$0</b><span>forever</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Everything your Downloads folder needs</h2>
+      <p class="sub">Set it up once. FileOrgy runs quietly in the system tray and keeps your folders organized.</p>
+      <div class="grid">
+        <div class="card"><div class="ico">📂</div><h3>Auto-sort by file type</h3><p>New files go into Programs, Documents, Compressed, Pictures, Videos, Audio or Others inside the same folder.</p></div>
+        <div class="card"><div class="ico">🧾</div><h3>Rename invoices by date</h3><p>Reads dates inside PDF, Word and Excel files and renames them, e.g. <code>2026-09-14_invoice.pdf</code>.</p></div>
+        <div class="card"><div class="ico">📦</div><h3>Auto-extract archives</h3><p>Unpacks ZIP, RAR, 7z, TAR and multipart archives, then sends the original to the Recycle Bin.</p></div>
+        <div class="card"><div class="ico">🖼️</div><h3>Photos by year &amp; month</h3><p>Uses EXIF dates to file photos into <code>2026\09</code> folders without overwriting duplicates.</p></div>
+        <div class="card"><div class="ico">🧹</div><h3>Safe cleanup</h3><p>Removes old files and empty folders through the Windows Recycle Bin, so nothing is lost for good.</p></div>
+        <div class="card"><div class="ico">🔗</div><h3>Multi-step workflows</h3><p>Chain steps such as extract, read content, rename and move into one rule, with a friendly visual editor.</p></div>
+        <div class="card"><div class="ico">🖱️</div><h3>Right-click to organize</h3><p>"Organize with FileOrgy" in File Explorer cleans any folder in one click.</p></div>
+        <div class="card"><div class="ico">⚡</div><h3>Real-time &amp; lightweight</h3><p>Uses Windows kernel change notifications, not polling. It waits until downloads finish before it touches them.</p></div>
+        <div class="card"><div class="ico">🚀</div><h3>Auto-updates</h3><p>Checks GitHub for new releases and installs them in a couple of clicks.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="categories" style="padding-top:0">
+    <div class="wrap">
+      <h2>Seven tidy folders, zero effort</h2>
+      <p class="sub">The built-in in-place rules sort the root of any watched folder. Existing subfolders are left alone.</p>
+      <div class="cats">
+        <span class="cat">💾 Programs</span><span class="cat">📄 Documents</span><span class="cat">📦 Compressed</span>
+        <span class="cat">🖼️ Pictures</span><span class="cat">🎥 Videos</span><span class="cat">🎵 Audio</span><span class="cat">⚙️ Others</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="sub">Three steps, about a minute.</p>
+      <div class="steps">
+        <div class="step"><h3>Install</h3><p>Run <code>FileOrgy-Setup.exe</code>. Choose whether to start with Windows, start in the tray, and add the Explorer right-click menu.</p></div>
+        <div class="step"><h3>Pick your folders</h3><p>Downloads is watched out of the box. Add Desktop, Documents or any other folder from the Watch Folders tab.</p></div>
+        <div class="step"><h3>Forget about it</h3><p>New files are organized as they arrive. On startup, FileOrgy also catches up on anything that arrived while it was off.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <h2>Frequently asked questions</h2>
+      <div class="faq">
+        <details open><summary>How do I automatically organize my Downloads folder on Windows?</summary><p>Install FileOrgy and keep the default Downloads watch folder enabled. New downloads are sorted into Programs, Documents, Compressed, Pictures, Videos, Audio and Others subfolders as soon as they finish downloading. Click <b>Scan Monitored Folders</b> to organize files that are already there.</p></details>
+        <details><summary>Is FileOrgy free?</summary><p>Yes. FileOrgy is free and open source under the MIT License.</p></details>
+        <details><summary>Does it slow down my PC?</summary><p>No. It uses Windows kernel change notifications instead of polling, so it uses 0% CPU while idle and about 18–25 MB of RAM.</p></details>
+        <details><summary>Can it rename PDF invoices by date?</summary><p>Yes. The built-in "Organize Invoices &amp; Receipts" rule reads the date inside PDF, Word and Excel files, renames them like <code>2026-09-14_invoice.pdf</code> and files them into year and month folders.</p></details>
+        <details><summary>Will it delete my files?</summary><p>Only if you create a cleanup rule, and even then files go to the Windows Recycle Bin by default so you can restore them.</p></details>
+        <details><summary>Is it an alternative to DropIt, File Juggler or Hazel?</summary><p>Yes. Like those tools, FileOrgy uses rules to move, rename and clean up files automatically. It's free, open source and built natively for Windows 10 and 11.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Give your Downloads folder a break</h2>
+      <p class="sub">Free download for Windows 10 and 11 (64-bit).</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/aadilahammad86/FileOrgy/releases/latest/download/FileOrgy-Setup.exe">⬇️ Download FileOrgy</a>
+        <a class="btn btn-ghost" href="https://github.com/aadilahammad86/FileOrgy/blob/master/TUTORIAL.md">Read the tutorial</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 FileOrgy · MIT License</span>
+    <span><a href="https://github.com/aadilahammad86/FileOrgy">GitHub</a> · <a href="https://github.com/aadilahammad86/FileOrgy/blob/master/INSTALLER.md">Install guide</a> · <a href="https://github.com/aadilahammad86/FileOrgy/blob/master/docs/RULES_AND_WORKFLOWS_GUIDE.md">Rules guide</a> · <a href="https://github.com/aadilahammad86/FileOrgy/issues">Report an issue</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

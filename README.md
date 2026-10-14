@@ -1,10 +1,35 @@
-# ⚡ FileOrgy
+<div align="center">
 
-> **High-Performance, Near-Zero Resource Windows File Automation & Organization Software**
+# ⚡ FileOrgy — Automatic File Organizer for Windows
 
-**FileOrgy** is an ultra-lightweight, high-speed Windows desktop application engineered for 24/7 autonomous folder monitoring, content inspection, smart renaming, multi-step pipeline automation, archive handling, and storage cleanup.
+**Free, open-source Windows app that automatically sorts, renames, and cleans up your Downloads folder and any other folder in real time.**
+
+[![Latest Release](https://img.shields.io/github/v/release/aadilahammad86/FileOrgy?label=download&color=4f46e5)](https://github.com/aadilahammad86/FileOrgy/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/aadilahammad86/FileOrgy/total?color=22c55e)](https://github.com/aadilahammad86/FileOrgy/releases)
+[![Release Pipeline](https://img.shields.io/github/actions/workflow/status/aadilahammad86/FileOrgy/release.yml?branch=master&label=build)](https://github.com/aadilahammad86/FileOrgy/actions/workflows/release.yml)
+![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[**⬇️ Download for Windows**](https://github.com/aadilahammad86/FileOrgy/releases/latest/download/FileOrgy-Setup.exe) · [🌐 Website](https://aadilahammad86.github.io/FileOrgy/) · [Tutorial](TUTORIAL.md) · [Install Guide](INSTALLER.md) · [Rules Guide](docs/RULES_AND_WORKFLOWS_GUIDE.md)
+
+![FileOrgy automatic file organizer dashboard for Windows](docs/assets/ui_overview.jpg)
+
+</div>
+
+**FileOrgy** is an ultra-lightweight Windows file organizer and folder automation tool. It watches folders like **Downloads**, **Desktop**, and **Documents** 24/7 and automatically sorts files into folders by type, reads PDF and Office documents to rename invoices by date, extracts ZIP/RAR/7z archives, and cleans up old files, all with **0% idle CPU** and about **20 MB of RAM**.
+
+Think of it as a free, rule-based alternative to tools like **DropIt** and **File Juggler**, or a Windows take on macOS **Hazel**: set up rules once, and your folders stay organized automatically.
 
 Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kernel I/O completion ports (`ReadDirectoryChangesW`) to ensure **0.0% idle CPU usage** and an ultra-lean memory footprint (~18MB to 25MB RAM).
+
+### ✅ What FileOrgy Does
+- 📂 **Organize your Downloads folder automatically** into Programs, Documents, Compressed, Pictures, Videos, Audio, and Others (250+ file types).
+- 🧾 **Rename PDFs and invoices by their internal date**, e.g. `2026-09-14_invoice_acme.pdf`.
+- 📦 **Auto-extract ZIP, RAR, 7z, and multipart archives**, then recycle the original.
+- 🖼️ **Sort photos into year/month folders** using EXIF dates.
+- 🧹 **Delete old files and empty folders** safely via the Recycle Bin.
+- 🖱️ **Right-click any folder ➔ "Organize with FileOrgy"** for one-click cleanup.
 
 ---
 
@@ -15,11 +40,14 @@ Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kerne
 - **Smart Debounce Engine**: Automatically coalesces rapid Windows file events (e.g., active downloads or large file copies) with customizable debounce delays (default `1200ms–1500ms`).
 - **File Lock & Stability Protection**: Detects when third-party applications are still writing to a file, politely waiting until file locks are released before triggering workflows.
 - **Transient File Filtering**: Automatically ignores temporary files (`*.tmp`, `*.crdownload`, `*.part`, `~$*`, `desktop.ini`, `Thumbs.db`).
+- **Startup Catch-Up Scan**: On launch, FileOrgy can automatically scan all monitored folders to organize files that arrived while it wasn't running (toggle in **Settings**, enabled by default).
 
 ### 2. 🗂️ Automatic File Organization
 - **Granular Condition Engine**: Match files by Name, Extension, Full Path, File Size, Created/Modified Dates, Extracted Document Content, Internal Document Date, or Custom Variables.
 - **Operators**: `Equals`, `NotEquals`, `Contains`, `StartsWith`, `EndsWith`, `MatchesWildcard`, `MatchesRegex`, `InKeywordList`, `NotInKeywordList`, `GreaterThan`, `LessThan`, `OlderThanDays`, `NewerThanDays`, `IsEmptyFile`.
 - **Match Logic**: Supports both `Match ALL (AND)` and `Match ANY (OR)` condition grouping.
+- **In-Place Organization Presets**: Seven built-in category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others) backed by 250+ file-type filters, sorting files into subfolders of the watched folder itself.
+- **Catch-All "Others" Rule**: Any file whose type isn't matched by another rule's extension filters is routed to an in-place `Others` folder. The set of already-sorted extensions (`AllSortedExts`) is recomputed automatically from your enabled rules.
 - **Conflict Resolution Strategies**:
   - `AutoRenameUnique`: Safely appends incremental counter `(1)`, `(2)` to prevent accidental overwrites.
   - `Overwrite`: Replaces destination file.
@@ -37,6 +65,7 @@ Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kerne
   - `{doc_date:format}`: Internal extracted document date (e.g., `{doc_date:yyyy-MM-dd}`).
   - `{filesize}` / `{filesize_bytes}`: Human-readable or raw byte size.
   - `{parent}`: Name of parent folder.
+  - `{directory}`: Full path of the folder containing the file (used by the in-place presets, e.g. `{directory}\Documents`).
   - `{counter:001}`: Incremental sequence number padded with zeroes (e.g., `001`, `002`).
   - `{var:VariableName}`: Custom variable substitution.
   - `{regex:GroupName}` / `{match:1}`: Captured regex groups from filename or document content.
@@ -98,9 +127,20 @@ Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kerne
 
 ### 9. 🧩 Variables & Reusable Lists
 - **Custom Variables**: Global key-value dictionary (e.g., `BaseStorage`, `ClientPrefix`, `TaxYear`) accessible via `{var:Key}` in file paths, templates, and rules.
-- **Reusable Keyword Lists**: Define named lists (e.g., `FinancialKeywords`, `MediaFormats`, `DocExtensions`). Update a list in one place and all rules using `InKeywordList` update instantly.
+- **Reusable Keyword Lists**: Define named lists (e.g., `FinancialKeywords`, `DocumentExts`, `ArchiveExts`). Update a list in one place and all rules using `InKeywordList` update instantly.
 
-### 10. 📊 Comprehensive Logging & Activity Tracking
+### 10. 🧭 Friendly Rule Editor & In-App Guide
+- **Plain-Language Labels**: Condition targets, operators, and step types are shown with friendly descriptions instead of raw enum names.
+- **Clickable Token Chips**: Insert rename/path tokens (`{basename}`, `{doc_date:yyyy-MM-dd}`, `{var:Name}`, ...) with one click.
+- **Live Keyword Previews**: See the contents of a selected keyword list right inside the condition editor.
+- **💡 Rule Guide**: An interactive in-app guide (Rules & Workflows tab) explaining conditions, steps, and tokens with examples. Also available as [docs/RULES_AND_WORKFLOWS_GUIDE.md](docs/RULES_AND_WORKFLOWS_GUIDE.md).
+
+### 11. 🚀 In-App Updates
+- **GitHub Releases Integration**: Checks the [latest release](https://github.com/aadilahammad86/FileOrgy/releases/latest) on startup (toggle in **Settings**) or on demand via **🔄 Check for Updates**.
+- **Update Banner & Dialog**: When a newer version exists, a banner appears in the header; the update dialog shows release notes, download size, and a live progress bar.
+- **Seamless Install**: The installer is downloaded to `%TEMP%\FileOrgyUpdates\`, launched, and FileOrgy exits so setup can replace it cleanly.
+
+### 12. 📊 Comprehensive Logging & Activity Tracking
 - **Live Activity Feed**: Real-time streaming log of all file detections, rules matched, renames, moves, extractions, and cleanups.
 - **Persistent JSONL Storage**: Operations saved to disk in JSON Lines format (`%LocalAppData%\FileOrgy\logs\activity.jsonl`) with rolling retention.
 - **Exporting**: One-click export to **CSV** and **JSON**.
@@ -125,14 +165,15 @@ Built on native **.NET 10 (Windows Desktop & WPF)**, FileOrgy uses Windows kerne
 > 📖 **Guides & Documentation:**
 > - [Setup & Deployment Guide (INSTALLER.md)](INSTALLER.md) — Windows installer guide, silent deployment switches, configurable toggles, and clean uninstallation.
 > - [Visual Workflow Guide & Tutorial (TUTORIAL.md)](TUTORIAL.md) — UI walkthrough, 7-category in-place organization architecture, and custom rule recipes.
+> - [Rules & Workflows Guide (docs/RULES_AND_WORKFLOWS_GUIDE.md)](docs/RULES_AND_WORKFLOWS_GUIDE.md) — Conditions, operators, workflow steps, and tokens explained with examples.
 
 ### 📦 Windows Setup Installer (Recommended)
 
 FileOrgy includes a native Windows Setup executable with configurable installation toggles:
 
-1. Download or run **`installer/FileOrgy-Setup-v1.0.0.exe`**.
+1. Download **`FileOrgy-Setup.exe`** (always the latest) or a versioned **`FileOrgy-Setup-vX.Y.Z.exe`** from the [GitHub Releases page](https://github.com/aadilahammad86/FileOrgy/releases/latest). A portable `FileOrgy-vX.Y.Z-portable.zip` is published with every release too.
 2. Customize your installation with interactive toggles:
-   - **⚡ Run at Windows Startup**: Automatically starts FileOrgy on user logon.
+   - **⚡ Run at Windows Startup**: Automatically starts FileOrgy on user logon (via Task Scheduler when combined with *Run as Administrator*).
    - **🔔 Start Minimized to Tray**: Runs silently in the notification area with 0.00% idle CPU.
    - **🖱️ Explorer Context Menu**: Adds right-click *"Organize with FileOrgy"* to folders.
    - **🛡️ Run with Administrator Privileges**: Optional elevation for protected folders.
@@ -140,23 +181,26 @@ FileOrgy includes a native Windows Setup executable with configurable installati
 3. Click **Install** to complete installation in seconds.
 
 > [!TIP]
-> **Privileges & UAC:** FileOrgy installs by default as a per-user app (requiring zero administrator elevation). If you enable *Run with Administrator Privileges*, setup automatically invokes Windows UAC via `ShellExecuteEx` upon completion to prevent Win32 error 740. See [INSTALLER.md](INSTALLER.md#6-privilege-architecture-uac-elevation--troubleshooting-error-740) for full details.
+> **Privileges & UAC:** The installer asks for administrator approval and installs machine-wide into `C:\Program Files\FileOrgy`. The app itself runs as a standard user unless you enable *Run with Administrator Privileges*. In that case setup launches it via `ShellExecuteEx` (preventing Win32 error 740) and registers autostart as an elevated Task Scheduler task, because Windows silently skips elevated apps listed in the `Run` registry key at logon. See [INSTALLER.md](INSTALLER.md#6-privilege-architecture-uac-elevation--troubleshooting-error-740) for full details.
 
 #### Silent / Enterprise Deployment
 ```powershell
 # Headless unattended installation with default settings:
-.\installer\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+.\FileOrgy-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
 # Custom task selection:
-.\installer\FileOrgy-Setup-v1.0.0.exe /VERYSILENT /TASKS="autostart,startminimized,contextmenu"
+.\FileOrgy-Setup.exe /VERYSILENT /TASKS="autostart,startminimized,contextmenu"
 ```
 
 #### Clean Uninstallation
 Uninstall via **Windows Settings ➔ Installed apps ➔ FileOrgy ➔ Uninstall**, or run:
 ```powershell
-& "${env:LOCALAPPDATA}\Programs\FileOrgy\unins000.exe" /VERYSILENT /NORESTART
+& "C:\Program Files\FileOrgy\unins000.exe" /VERYSILENT /NORESTART
 ```
-*Guarantees zero orphaned registry keys on shared system paths.*
+*Guarantees zero orphaned registry keys on shared system paths, and removes the elevated autostart task if one was created.*
+
+### 🔄 Updating
+FileOrgy checks for new releases automatically on startup. You can also open **⚙️ Settings ➔ Software Updates & Repository Releases**, click **🔄 Check for Updates**, then **🚀 View & Install Update**. Your rules, variables, and logs in `%LocalAppData%\FileOrgy\` are preserved across updates.
 
 ### Prerequisites
 - Windows 10 / 11 (x64 / ARM64)
@@ -171,7 +215,7 @@ cd C:\Users\swalih\FileOrgy
 # Restore and build the solution
 dotnet build FileOrgy.slnx -c Release
 
-# Run automated tests (31 passing unit tests)
+# Run automated tests (core engine, advanced features, update version logic)
 dotnet test FileOrgy.slnx
 
 # Run FileOrgy
@@ -186,7 +230,18 @@ FileOrgy.App.exe --tray
 
 # Or with --minimized
 FileOrgy.App.exe --minimized
+
+# Organize a specific folder immediately (used by the Explorer context menu)
+FileOrgy.App.exe --scan "C:\Users\<you>\Downloads"
 ```
+
+### Releases (CI)
+Every push to `master` runs `.github/workflows/release.yml`, which:
+1. Computes the next patch version from the latest `vX.Y.Z` tag (e.g. `v1.0.8` ➔ `v1.0.9`).
+2. Runs the unit tests.
+3. Publishes a self-contained single-file `win-x64` build stamped with that version.
+4. Compiles the Inno Setup installer (`/DMyAppVersion=X.Y.Z`) and a portable zip.
+5. Creates a GitHub Release with `FileOrgy-Setup-vX.Y.Z.exe`, `FileOrgy-Setup.exe`, and `FileOrgy-vX.Y.Z-portable.zip`.
 
 ---
 
@@ -210,6 +265,7 @@ FileOrgy/
 │   │   │   ├── WindowsRecycleBin.cs    # Native shell32 Recycle Bin P/Invoke
 │   │   │   ├── ConfigService.cs        # JSON config loader & default presets
 │   │   │   ├── LogManager.cs           # Async circular log buffer & export
+│   │   │   ├── UpdateHelper.cs         # Release tag parsing & installer asset selection
 │   │   │   └── FileOrgyOrchestrator.cs # Central coordinator & concurrency pool
 │   │   └── Utils/
 │   │       ├── FileLockHelper.cs       # Non-blocking file stability detection
@@ -219,7 +275,9 @@ FileOrgy/
 │       ├── App.xaml / App.xaml.cs      # CLI startup & application host
 │       ├── MainWindow.xaml / .cs       # Main multi-tab application window
 │       ├── Views/
-│       │   └── RuleEditDialog.xaml/.cs # Visual rule & workflow editor
+│       │   ├── RuleEditDialog.xaml/.cs # Visual rule & workflow editor
+│       │   ├── RuleGuideDialog.xaml/.cs# Interactive rules & workflows guide
+│       │   └── UpdateDialog.xaml/.cs   # Release notes & download progress
 │       ├── ViewModels/
 │       │   ├── MainViewModel.cs        # Navigation & coordinator
 │       │   ├── DashboardViewModel.cs   # KPI cards & live feed
@@ -228,19 +286,51 @@ FileOrgy/
 │       │   ├── RuleEditViewModel.cs    # Condition & step pipeline builder
 │       │   ├── VariablesViewModel.cs   # Custom variables & keyword lists
 │       │   ├── LogsViewModel.cs        # Log search, filters & export
-│       │   └── SettingsViewModel.cs    # Auto-start, debounce & limits
+│       │   └── SettingsViewModel.cs    # Auto-start, startup scan, updates & limits
 │       ├── Services/
 │       │   ├── TrayService.cs          # Native NotifyIcon & context menu
-│       │   └── StartupHelper.cs        # Windows Registry Run integration
+│       │   ├── StartupHelper.cs        # HKCU Run key / elevated Task Scheduler autostart
+│       │   └── UpdateService.cs        # GitHub Releases check, download & install
 │       └── Converters/
 │           └── CommonConverters.cs     # WPF UI value converters
-└── tests/
-    └── FileOrgy.Tests/                 # Comprehensive unit test suite
-        ├── CoreTests.cs                # 11 core engine & workflow tests
-        └── AdvancedFeatureTests.cs     # 8 advanced tests (PDF, DOCX, XLSX, etc.)
+├── tests/
+│   ├── FileOrgy.Tests/                 # Comprehensive unit test suite
+│   │   ├── CoreTests.cs                # Core engine, workflow & in-place preset tests
+│   │   ├── AdvancedFeatureTests.cs     # Advanced tests (PDF, DOCX, XLSX, etc.)
+│   │   └── UpdateHelperTests.cs        # Version comparison & asset selection tests
+│   └── reboot_log_catcher.ps1          # Post-reboot autostart verification logger
+├── tools/
+│   └── setup_elevated_autostart.ps1    # Registers the elevated autostart task (admin)
+├── run_setup_as_admin.bat              # Self-elevating wrapper for the script above
+├── FileOrgy.iss                        # Inno Setup installer script
+└── .github/workflows/release.yml       # Auto-versioned build & GitHub Release pipeline
 ```
 
 ---
 
+## ❓ FAQ
+
+**How do I automatically organize my Downloads folder on Windows?**
+Install FileOrgy and leave the default *Downloads Folder* watch folder enabled. New downloads are sorted into `Programs`, `Documents`, `Compressed`, `Pictures`, `Videos`, `Audio`, and `Others` subfolders as soon as they finish downloading. Click **⚡ Scan Monitored Folders** to organize the files that are already there.
+
+**Is FileOrgy free?**
+Yes. FileOrgy is free and open source under the MIT License.
+
+**Does it slow down my PC?**
+No. FileOrgy uses Windows kernel change notifications instead of polling, so it uses 0% CPU while idle and about 18–25 MB of RAM.
+
+**Can it rename PDF invoices by date?**
+Yes. The built-in *Organize Invoices & Receipts* rule reads the date inside PDF, Word, and Excel files and renames them like `2026-09-14_invoice.pdf`, then files them into `Invoices6 9`.
+
+**Will it delete my files?**
+Only if you create a cleanup rule, and even then files go to the Windows Recycle Bin by default so you can restore them.
+
+**Does it work on Windows 10 and Windows 11?**
+Yes, on 64-bit Windows 10 and 11.
+
+---
+
 ## 📜 License
-MIT License. Built with ❤️ for Windows.
+[MIT License](LICENSE). Built with ❤️ for Windows.
+
+<sub>**Keywords:** automatic file organizer for Windows, organize Downloads folder automatically, file sorter, folder monitor, auto rename files, PDF invoice renamer, auto extract ZIP RAR 7z, file automation, Windows productivity tool, DropIt alternative, File Juggler alternative, Hazel for Windows.</sub>
