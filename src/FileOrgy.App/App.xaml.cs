@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Windows;
+using FileOrgy.App.Services;
+using FileOrgy.Core.Services;
 using WpfApp = System.Windows.Application;
 
 namespace FileOrgy.App
@@ -57,6 +59,16 @@ namespace FileOrgy.App
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            try
+            {
+                var configService = new ConfigService();
+                ThemeService.ApplyTheme(configService.CurrentConfig.Settings.DarkMode);
+            }
+            catch
+            {
+                ThemeService.ApplyTheme(isDark: true);
+            }
 
             var mainWindow = new MainWindow();
             MainWindow = mainWindow;

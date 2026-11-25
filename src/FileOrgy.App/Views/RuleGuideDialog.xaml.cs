@@ -1,4 +1,5 @@
 using System.Windows;
+using FileOrgy.App.Services;
 
 namespace FileOrgy.App.Views
 {
@@ -7,6 +8,7 @@ namespace FileOrgy.App.Views
         public RuleGuideDialog()
         {
             InitializeComponent();
+            SourceInitialized += (_, _) => ThemeService.ApplyWindowDarkMode(this, ThemeService.IsDark);
         }
 
         private void OnCloseClick(object sender, RoutedEventArgs e)

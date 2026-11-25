@@ -5,257 +5,463 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Automation Rules &amp; Workflows Guide"
-        Height="680" Width="920"
-        MinHeight="550" MinWidth="750"
+        Height="720"
+        Width="920"
+        MinHeight="560"
+        MinWidth="760"
         WindowStartupLocation="CenterOwner"
-        Background="#111827"
-        Foreground="#F9FAFB"
-        FontFamily="Segoe UI, -apple-system, sans-serif">
+        Background="{DynamicResource Brush.Canvas}"
+        Foreground="{DynamicResource Brush.TextPrimary}"
+        FontFamily="{StaticResource Font.UI}">
 
     <Window.Resources>
-        <Style x:Key="SectionCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#1F2937"/>
-            <Setter Property="BorderBrush" Value="#374151"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="16"/>
+        <Style x:Key="GuideSectionCardStyle" TargetType="{x:Type Border}" BasedOn="{StaticResource CardBorderStyle}">
+            <Setter Property="Padding" Value="20"/>
             <Setter Property="Margin" Value="0,0,0,16"/>
         </Style>
 
-        <Style x:Key="CodeBadgeStyle" TargetType="Border">
-            <Setter Property="Background" Value="#0F172A"/>
-            <Setter Property="BorderBrush" Value="#334155"/>
+        <Style x:Key="GuideCodeBadgeStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource Brush.Well}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="Padding" Value="6,2"/>
-            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Sm}"/>
+            <Setter Property="Padding" Value="7,2"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
+    <Border Background="{DynamicResource Brush.Canvas}" Padding="20">
+        <Grid>
+            <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#1F2937" CornerRadius="8" Padding="16" Margin="0,0,0,16" BorderBrush="#374151" BorderThickness="1">
-            <Grid>
+        <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="18,14" Margin="0,0,0,16">
+            <Grid MaxWidth="780" HorizontalAlignment="Center" Width="780">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="💡 " FontSize="20" VerticalAlignment="Center"/>
-                        <TextBlock Text="FileOrgy Automation Rules &amp; Workflows Guide" FontSize="18" FontWeight="SemiBold" Foreground="#F9FAFB" VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource Brush.AccentSubtle}"
+                            BorderBrush="{DynamicResource Brush.AccentBorder}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.Md}"
+                            Width="38"
+                            Height="38"
+                            Margin="0,0,12,0">
+                        <Path Data="{StaticResource Icon.Lightbulb}"
+                              Fill="{DynamicResource Brush.AccentText}"
+                              Width="18"
+                              Height="18"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Automation Rules &amp; Workflows Guide" Style="{StaticResource Text.SectionTitle}" FontSize="18"/>
+                        <TextBlock Text="Reference for folder scopes, condition targets, operators, workflow steps, and tokens." Style="{StaticResource Text.Secondary}"/>
                     </StackPanel>
-                    <TextBlock Text="Everything you need to know about matching conditions, multi-step actions, and dynamic token formatting." FontSize="12" Foreground="#9CA3AF" Margin="28,4,0,0"/>
                 </StackPanel>
-                <Button Grid.Column="1" Content="✕ Close" Click="OnCloseClick" Padding="12,6" Background="#374151" Foreground="#E5E7EB" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center"/>
+
+                <Button Grid.Column="1"
+                        Style="{StaticResource IconButtonStyle}"
+                        Click="OnCloseClick"
+                        VerticalAlignment="Center"
+                        ToolTip="Close guide"
+                        AutomationProperties.AutomationId="BtnGuideHeaderClose"
+                        AutomationProperties.Name="Close Guide">
+                    <Path Data="{StaticResource Icon.Close}"
+                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          Width="12"
+                          Height="12"
+                          Stretch="Uniform"/>
+                </Button>
             </Grid>
         </Border>
 
-        <!-- Scrollable Guide Content -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="0,0,10,0">
+        <!-- Centered Scrollable Reading Column -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel MaxWidth="780" HorizontalAlignment="Center" Margin="0,0,8,0">
 
-                <!-- 1. How Rules Work & Matching Logic -->
-                <Border Style="{StaticResource SectionCardStyle}">
+                <!-- 1. Rule Evaluation, Priority & Folder Scope -->
+                <Border Style="{StaticResource GuideSectionCardStyle}">
                     <StackPanel>
-                        <TextBlock Text="1. 🎯 Matching Conditions &amp; Logic" FontSize="15" FontWeight="SemiBold" Foreground="#A5B4FC" Margin="0,0,0,8"/>
-                        <TextBlock Text="When a file lands in a monitored folder, FileOrgy evaluates rules from top to bottom by priority." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                        
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Match Logic:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="• ALL conditions (AND): File must satisfy every single condition to trigger.&#x0a;• ANY condition (OR): File triggers rule if at least one condition matches." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Targets:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="File Extension (e.g. pdf, zip), File Name with/without extension, Full File Path, File Size in bytes, Creation / Modification Date, or Document Text Content (auto-extracted from PDFs, DOCX, TXT, OCR images)." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Operators:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Equals, Contains, Starts/Ends With, Wildcard (*.log, img_??.*), Regular Expression, Greater/Less Than (for sizes &amp; dates), and Matches Keyword List." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 2. Reusable Keyword Lists -->
-                <Border Style="{StaticResource SectionCardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="2. 📦 Reusable Keyword Lists &amp; In-Place Sorting" FontSize="15" FontWeight="SemiBold" Foreground="#A5B4FC" Margin="0,0,0,8"/>
-                        <TextBlock Text="Instead of creating dozens of separate rules for each file type, keyword lists group hundreds of formats into single powerful conditions:" Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
-
-                        <StackPanel Margin="0,0,0,6">
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}"><TextBlock Text="ArchiveExts" Foreground="#38BDF8" FontFamily="Consolas"/></Border>
-                                <TextBlock Text="43 compression formats: .zip, .rar, .7z, .tar, .gz, .bz2, .xz, .iso, .img, .dmg, .wim, .cab, ..." Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}"><TextBlock Text="ProgramExts" Foreground="#38BDF8" FontFamily="Consolas"/></Border>
-                                <TextBlock Text="34 executable formats: .exe, .msi, .msix, .bat, .cmd, .ps1, .vbs, .apk, .appimage, .sh, ..." Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}"><TextBlock Text="DocumentExts" Foreground="#38BDF8" FontFamily="Consolas"/></Border>
-                                <TextBlock Text="75 document &amp; data formats: .pdf, .docx, .xlsx, .pptx, .csv, .txt, .md, .json, .xml, .yaml, ..." Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}"><TextBlock Text="PictureExts / VideoExts / AudioExts" Foreground="#38BDF8" FontFamily="Consolas"/></Border>
-                                <TextBlock Text="Comprehensive media formats (images, RAWs, movies, audio tracks)." Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Border Style="{StaticResource CodeBadgeStyle}"><TextBlock Text="AllSortedExts" Foreground="#38BDF8" FontFamily="Consolas"/></Border>
-                                <TextBlock Text="Dynamic catch-all list. Used by the 'Others' rule: matches any file NOT in the sorted lists!" Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Workflow}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="1. Rule Evaluation, Priority &amp; Folder Scope" Style="{StaticResource Text.SectionTitle}"/>
                         </StackPanel>
-                        <TextBlock Text="💡 Tip: You can create your own custom keyword lists or edit existing lists under the 'Variables &amp; Lists' tab!" Foreground="#818CF8" FontSize="11" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Border>
 
-                <!-- 3. Multi-Step Execution Pipelines -->
-                <Border Style="{StaticResource SectionCardStyle}">
-                    <StackPanel>
-                        <TextBlock Text="3. ⚡ Sequential Multi-Step Workflow Actions" FontSize="15" FontWeight="SemiBold" Foreground="#A5B4FC" Margin="0,0,0,8"/>
-                        <TextBlock Text="When a rule triggers, its workflow steps run sequentially in order (Step 1 ➔ Step 2 ➔ Step 3). You can reorder steps with ▲ Up / ▼ Down:" Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <TextBlock Text="When a file settles in a monitored watch folder, FileOrgy evaluates enabled rules in ascending Priority order (lowest priority number runs first)."
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
 
-                        <Grid Margin="0,0,0,6">
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="155"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="📁 Move / 📋 Copy File:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Transfers or duplicates file into target destination folder with conflict resolution (auto-rename unique, overwrite, or skip)." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Column="0" Text="Folder Scope" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="Leave all folder pills unselected to run on every monitored folder (e.g. C:\Users\Alex\Downloads). Selecting one or more folder pills restricts the rule to files inside those watch folders and their subdirectories."/>
                         </Grid>
 
-                        <Grid Margin="0,0,0,6">
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="155"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="✏️ Smart Rename:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Renames file using pattern tokens e.g. '{doc_date:yyyy-MM-dd}_{basename}.{ext}' with case transforms." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Column="0" Text="Match Logic" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="Match ALL (AND) requires every condition to pass. Match ANY (OR) triggers if at least one condition passes. A rule with zero conditions matches every file in its folder scope."/>
                         </Grid>
 
-                        <Grid Margin="0,0,0,6">
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="155"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="📦 Extract Archive:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Unpacks ZIP, RAR, 7Z, TAR, GZ into a subfolder. Optionally feeds extracted files back into the pipeline." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="📅 Extract Document Date:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Scans text content inside invoices/receipts to detect the billing date and saves it for '{doc_date}' tokens." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
-                        </Grid>
-
-                        <Grid Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="⚙️ Run Command:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12"/>
-                            <TextBlock Grid.Column="1" Text="Executes external batch scripts, PowerShell scripts, or executable tools passing '{filepath}' as an argument." Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap"/>
+                            <TextBlock Grid.Column="0" Text="Stop on Match" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="When enabled, lower-priority rules are skipped once this rule matches and completes. Place specific rules at higher priority and catch-all rules last."/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- 4. Dynamic Tokens Cheatsheet -->
-                <Border Style="{StaticResource SectionCardStyle}">
+                <!-- 2. Condition Targets (All 10) -->
+                <Border Style="{StaticResource GuideSectionCardStyle}">
                     <StackPanel>
-                        <TextBlock Text="4. 🏷️ Dynamic Path &amp; Rename Tokens Cheatsheet" FontSize="15" FontWeight="SemiBold" Foreground="#A5B4FC" Margin="0,0,0,8"/>
-                        <TextBlock Text="Use these tokens in Destination Paths and Smart Rename patterns to dynamically organize files:" Foreground="#D1D5DB" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Search}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="2. Condition Targets (10 Targets)" Style="{StaticResource Text.SectionTitle}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Each condition inspects one attribute of the incoming file or extracted context:"
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
 
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{directory} or {dir}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="The folder where the file was detected (e.g. C:\Users\swalih\Downloads)." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="FileName / BaseName" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Full filename with extension (invoice.pdf) or without extension (invoice)."/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{basename}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="Original filename without the extension (e.g. 'Contract_May')." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="Extension / FullPath" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Extension without leading dot (pdf, zip) or the full disk path (C:\Users\Alex\Downloads\invoice.pdf)."/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{ext} / {dotext}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="File extension without dot ('pdf') or with dot ('.pdf')." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="FileSizeBytes" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="File size in bytes for numeric comparisons or zero-byte checks."/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{doc_date:yyyy-MM-dd}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="Extracted invoice date. Format tokens: yyyy (year), MM (month 01-12), dd (day 01-31)." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="FileCreatedDate / Modified" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Filesystem creation timestamp (FileCreatedDate) or last-write timestamp (FileModifiedDate)."/>
                         </Grid>
 
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{year} / {month} / {day}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="Current system calendar date when file is organized." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="ExtractedContent" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Text content auto-extracted from PDF, DOCX, TXT, or OCR images."/>
                         </Grid>
 
-                        <Grid Margin="0,0,0,4">
+                        <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="240"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Style="{StaticResource CodeBadgeStyle}" HorizontalAlignment="Left"><TextBlock Text="{}{counter:001}" Foreground="#818CF8" FontFamily="Consolas"/></Border>
-                            <TextBlock Grid.Column="1" Text="Auto-incrementing numeric counter formatted with leading zeros (001, 002, 003)." Foreground="#D1D5DB" FontSize="12" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="ExtractedDate" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Document or invoice date detected from extracted text content."/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="CustomVariable" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Reads the named variable from TargetVariable (global Variables &amp; Lists or captured pipeline variables)."/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- 5. Real-World Recipe Examples -->
-                <Border Style="{StaticResource SectionCardStyle}">
+                <!-- 3. Condition Operators (All 15) & Keyword Lists -->
+                <Border Style="{StaticResource GuideSectionCardStyle}">
                     <StackPanel>
-                        <TextBlock Text="5. 💡 Real-World Examples &amp; Best Practices" FontSize="15" FontWeight="SemiBold" Foreground="#A5B4FC" Margin="0,0,0,8"/>
-                        
-                        <TextBlock Text="• In-Place Subfolder Organization:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12" Margin="0,0,0,2"/>
-                        <TextBlock Text="Destination Path: {directory}\Documents&#x0a;Automatically keeps downloads organized right inside your monitored folder under categorized subfolders." Foreground="#9CA3AF" FontSize="11" Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Filter}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="3. Condition Operators (15 Operators) &amp; Keyword Lists" Style="{StaticResource Text.SectionTitle}"/>
+                        </StackPanel>
 
-                        <TextBlock Text="• Invoice Date-based Archiving:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12" Margin="0,0,0,2"/>
-                        <TextBlock Text="Step 1: Extract Document Date&#x0a;Step 2: Smart Rename ➔ {doc_date:yyyy-MM-dd}_{basename}.{ext}&#x0a;Step 3: Move File ➔ {directory}\Financials\{doc_date:yyyy}" Foreground="#9CA3AF" FontSize="11" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Text &amp; Patterns (8)" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="Equals, NotEquals, Contains, NotContains, StartsWith, EndsWith, MatchesWildcard (* and ?), MatchesRegex (supports CaseSensitive toggle)."/>
+                        </Grid>
 
-                        <TextBlock Text="• Stop on Match:" FontWeight="SemiBold" Foreground="#F9FAFB" FontSize="12" Margin="0,0,0,2"/>
-                        <TextBlock Text="When checked, once this rule matches and completes, no lower priority rules will execute on the file. Always keep specific rules (e.g. Invoices) at higher priority and generic catch-alls (e.g. Others) at the lowest priority." Foreground="#9CA3AF" FontSize="11"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Keyword Lists (2)" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="InKeywordList and NotInKeywordList match against reusable lists (ArchiveExts, ProgramExts, DocumentExts, PictureExts, VideoExts, AudioExts, AllSortedExts, or your custom lists in Variables &amp; Lists)."/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Size, Date &amp; Empty (5)" Style="{StaticResource Text.CardTitle}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                       Text="GreaterThan, LessThan, OlderThanDays, NewerThanDays, and IsEmptyFile (matches 0-byte files or empty text targets; requires no Value input)."/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Workflow Pipeline Steps (All 11) -->
+                <Border Style="{StaticResource GuideSectionCardStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Play}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="4. Sequential Workflow Steps (11 Step Types)" Style="{StaticResource Text.SectionTitle}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Matched rules execute their enabled steps in order from top to bottom. Each step can toggle Continue on Error so downstream steps still run if that step fails."
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="InspectDocument" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Extracts document text, title (doc_title), author (doc_author), and document date for later steps."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="ExtractDate" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Scans document text to detect the billing or invoice date for {doc_date:*} tokens (falls back to creation date)."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="RegexCapture" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Runs a regular expression against Content, FileName, or FullPath and stores named or numbered capture groups."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="SmartRename" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Renames the file using template tokens, CaseTransform, and conflict policy (AutoRenameUnique, Overwrite, Skip, KeepNewer)."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="MoveFile / CopyFile" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Moves or copies the file to a dynamic destination folder template with conflict resolution."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="ExtractArchive" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Unpacks ZIP, RAR, 7Z, TAR, GZ to SameFolder, SubfolderNamedAfterArchive, or CustomFolder, applies post-action (Keep, Recycle, Delete Permanently, Move), and can enqueue extracted files."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="RecycleFile / PermanentDelete" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="RecycleFile moves to the Windows Recycle Bin (undoable). PermanentDelete immediately removes the file from disk."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="CleanupFolder" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Cleans files older than N days in the file's directory (with SafeRecycle and RemoveEmptyFolders; protected system folders are blocked)."/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="RunCommand" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Launches an external script or executable passing argument placeholders like {filepath}, {filename}, and {folder}."/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. Template Tokens & Case Modifiers -->
+                <Border Style="{StaticResource GuideSectionCardStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Tag}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="5. Template Tokens &amp; Case Modifiers" Style="{StaticResource Text.SectionTitle}"/>
+                        </StackPanel>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{directory} / {dir} / {parent}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Full source folder (e.g. C:\Users\Alex\Downloads) or parent folder name (Downloads)."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{filename} / {basename}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Filename with extension (invoice_may.pdf) or without extension (invoice_may)."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{ext} / {dotext} / {filesize}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Extension without dot (pdf), with dot (.pdf), formatted size, or {filesize_bytes}."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{date:*} / {doc_date:*}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Current date ({date:yyyy-MM-dd}), extracted document date ({doc_date:yyyy-MM-dd}), {created:yyyy-MM-dd}, or {modified:yyyy-MM-dd}."/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{regex:name} / {match:1} / {var:*}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Captured regex groups, custom variables ({var:Vendor}), or padded sequence numbers ({counter:001})."/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource GuideCodeBadgeStyle}"><TextBlock Text="{}{upper:*} / {snake:*} / {kebab:*}" Style="{StaticResource Text.Mono}"/></Border>
+                            <TextBlock Grid.Column="1" Style="{StaticResource Text.Secondary}" TextWrapping="Wrap" Text="Inline modifiers: upper:, lower:, title:, snake:, kebab: (e.g. {snake:basename}). SmartRename also offers step-level CaseTransform (None, LowerCase, UpperCase, TitleCase, SnakeCase, KebabCase)."/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 6. Example Pipeline -->
+                <Border Style="{StaticResource GuideSectionCardStyle}" Margin="0,0,0,4">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Path Data="{StaticResource Icon.Check}"
+                                  Fill="{DynamicResource Brush.SuccessText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,8,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="6. Example: Invoice Auto-Archiving Pipeline" Style="{StaticResource Text.SectionTitle}"/>
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource Text.Secondary}" TextWrapping="Wrap"
+                                   Text="Scope: Downloads (C:\Users\Alex\Downloads)  |  Conditions (ALL): Extension Equals pdf + ExtractedContent Contains Invoice"/>
+                        <Border Style="{StaticResource WellBorderStyle}" Margin="0,10,0,0" Padding="12">
+                            <TextBlock Style="{StaticResource Text.Mono}" TextWrapping="Wrap"
+                                       Text="1. InspectDocument&#x0a;2. ExtractDate&#x0a;3. SmartRename -> {doc_date:yyyy-MM-dd}_{basename}{dotext} (SnakeCase)&#x0a;4. MoveFile -> {directory}\Financials\{doc_date:yyyy}"/>
+                        </Border>
                     </StackPanel>
                 </Border>
 
@@ -263,8 +469,16 @@
         </ScrollViewer>
 
         <!-- Footer -->
-        <Border Grid.Row="2" Margin="0,16,0,0">
-            <Button Content="Got it, Close Guide" Click="OnCloseClick" HorizontalAlignment="Right" Background="#4F46E5" Foreground="White" FontWeight="SemiBold" Padding="20,8" BorderThickness="0" Cursor="Hand"/>
+        <Border Grid.Row="2" Margin="0,14,0,0">
+            <Grid MaxWidth="780" HorizontalAlignment="Center" Width="780">
+                <Button Content="Got it, Close Guide"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Click="OnCloseClick"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.AutomationId="BtnGuideFooterClose"
+                        AutomationProperties.Name="Close Guide"/>
+            </Grid>
         </Border>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>

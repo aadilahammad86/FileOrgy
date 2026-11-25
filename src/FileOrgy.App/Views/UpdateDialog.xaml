@@ -5,77 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="FileOrgy Software Update"
-        Height="500" Width="640"
-        MinHeight="450" MinWidth="580"
+        Height="540"
+        Width="660"
+        MinHeight="460"
+        MinWidth="580"
         WindowStartupLocation="CenterOwner"
-        Background="#0F172A"
-        Foreground="#F8FAFC"
-        FontFamily="Segoe UI, -apple-system, sans-serif">
+        Background="{DynamicResource Brush.Canvas}"
+        Foreground="{DynamicResource Brush.TextPrimary}"
+        FontFamily="{StaticResource Font.UI}">
 
-    <Window.Resources>
-        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#6366F1"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#4F46E5"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#475569"/>
-                    <Setter Property="Foreground" Value="#94A3B8"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#1E293B"/>
-            <Setter Property="Foreground" Value="#E2E8F0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#334155"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#334155"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
-
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
+    <Border Background="{DynamicResource Brush.Canvas}" Padding="20">
+        <Grid>
+            <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,16" BorderBrush="#334155" BorderThickness="1">
+        <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="16" Margin="0,0,0,14">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -84,60 +35,229 @@
 
                 <StackPanel Grid.Column="0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="🚀 " FontSize="22" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="TxtTitle" Text="New Update Available!" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                        <Border Background="{DynamicResource Brush.AccentSubtle}"
+                                BorderBrush="{DynamicResource Brush.AccentBorder}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Md}"
+                                Width="34"
+                                Height="34"
+                                Margin="0,0,10,0">
+                            <Path Data="{StaticResource Icon.Drop}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16"
+                                  Height="16"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock x:Name="TxtTitle"
+                                   Text="New Update Available"
+                                   Style="{StaticResource Text.SectionTitle}"
+                                   FontSize="17"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Border Background="#312E81" CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
-                            <TextBlock x:Name="TxtCurrentVersion" Text="Current: v1.0.6" FontSize="11" FontWeight="SemiBold" Foreground="#A5B4FC"/>
+                    <StackPanel Orientation="Horizontal" Margin="44,8,0,0" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource Brush.AccentSubtle}"
+                                BorderBrush="{DynamicResource Brush.AccentBorder}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Pill}"
+                                Padding="9,3"
+                                Margin="0,0,8,0">
+                            <TextBlock x:Name="TxtCurrentVersion"
+                                       Text="Current: v1.0.6"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.AccentText}"/>
                         </Border>
-                        <TextBlock Text="➔" FontSize="12" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Border Background="#065F46" CornerRadius="4" Padding="8,3" Margin="0,0,12,0">
-                            <TextBlock x:Name="TxtLatestVersion" Text="Latest: v1.0.7" FontSize="11" FontWeight="SemiBold" Foreground="#6EE7B7"/>
+
+                        <Path Data="{StaticResource Icon.ArrowRight}"
+                              Fill="{DynamicResource Brush.TextMuted}"
+                              Width="12"
+                              Height="12"
+                              Stretch="Uniform"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"/>
+
+                        <Border Background="{DynamicResource Brush.SuccessSubtle}"
+                                BorderBrush="{DynamicResource Brush.Success}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Pill}"
+                                Padding="9,3"
+                                Margin="0,0,12,0">
+                            <TextBlock x:Name="TxtLatestVersion"
+                                       Text="Latest: v1.0.7"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.SuccessText}"/>
                         </Border>
-                        <TextBlock x:Name="TxtFileSize" Text="52.6 MB" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+
+                        <TextBlock x:Name="TxtFileSize"
+                                   Text="52.6 MB"
+                                   Style="{StaticResource Text.Muted}"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
 
-                <Button Grid.Column="1" Content="✕" Click="OnCancelClick" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" FontSize="16" Cursor="Hand" VerticalAlignment="Top"/>
+                <Button Grid.Column="1"
+                        Style="{StaticResource IconButtonStyle}"
+                        Click="OnCancelClick"
+                        VerticalAlignment="Top"
+                        ToolTip="Close update dialog"
+                        AutomationProperties.AutomationId="BtnUpdateClose"
+                        AutomationProperties.Name="Close">
+                    <Path Data="{StaticResource Icon.Close}"
+                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          Width="12"
+                          Height="12"
+                          Stretch="Uniform"/>
+                </Button>
             </Grid>
         </Border>
 
         <!-- Release Notes Section -->
-        <Border Grid.Row="1" Background="#1E293B" CornerRadius="8" Padding="16" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,16">
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="16" Margin="0,0,0,14">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="Release Notes / What's New:" FontSize="13" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="0"
+                           Text="RELEASE NOTES"
+                           Style="{StaticResource Text.Caption}"
+                           Margin="0,0,0,8"/>
+
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <TextBox x:Name="TxtReleaseNotes" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" Foreground="#E2E8F0" BorderThickness="0" FontSize="12" FontFamily="Consolas, Segoe UI"/>
+                    <TextBox x:Name="TxtReleaseNotes"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             Background="Transparent"
+                             Foreground="{DynamicResource Brush.TextPrimary}"
+                             CaretBrush="{DynamicResource Brush.TextPrimary}"
+                             BorderThickness="0"
+                             FontSize="12.5"
+                             FontFamily="{StaticResource Font.Mono}"
+                             AutomationProperties.AutomationId="TxtReleaseNotes"
+                             AutomationProperties.Name="Release Notes"/>
                 </ScrollViewer>
             </Grid>
         </Border>
 
         <!-- Download Progress Section -->
-        <Border x:Name="ProgressSection" Grid.Row="2" Background="#1E293B" CornerRadius="8" Padding="14" Margin="0,0,0,16" BorderBrush="#4338CA" BorderThickness="1" Visibility="Collapsed">
+        <Border x:Name="ProgressSection"
+                Grid.Row="2"
+                Style="{StaticResource WellBorderStyle}"
+                BorderBrush="{DynamicResource Brush.AccentBorder}"
+                Padding="14"
+                Margin="0,0,0,12"
+                Visibility="Collapsed">
             <StackPanel>
                 <Grid Margin="0,0,0,6">
-                    <TextBlock x:Name="TxtProgressStatus" Text="Downloading update installer..." FontSize="12" Foreground="#E2E8F0"/>
-                    <TextBlock x:Name="TxtProgressPercent" Text="0%" HorizontalAlignment="Right" FontSize="12" FontWeight="SemiBold" Foreground="#818CF8"/>
+                    <TextBlock x:Name="TxtProgressStatus"
+                               Text="Downloading update installer..."
+                               Style="{StaticResource Text.Secondary}"/>
+                    <TextBlock x:Name="TxtProgressPercent"
+                               Text="0%"
+                               HorizontalAlignment="Right"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.AccentText}"/>
                 </Grid>
-                <ProgressBar x:Name="PbDownload" Height="8" Minimum="0" Maximum="100" Value="0" Background="#0F172A" Foreground="#6366F1" BorderThickness="0"/>
+                <ProgressBar x:Name="PbDownload" Height="8" Minimum="0" Maximum="100" Value="0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Installer Ready Inline Confirmation Banner -->
+        <Border x:Name="InstallerReadyBanner"
+                Grid.Row="3"
+                Background="{DynamicResource Brush.SuccessSubtle}"
+                BorderBrush="{DynamicResource Brush.Success}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource Radius.Md}"
+                Padding="12,10"
+                Margin="0,0,0,12"
+                Visibility="Collapsed"
+                AutomationProperties.AutomationId="InstallerReadyBanner">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource Icon.Check}"
+                      Fill="{DynamicResource Brush.SuccessText}"
+                      Width="15"
+                      Height="15"
+                      Stretch="Uniform"
+                      Margin="0,2,10,0"
+                      VerticalAlignment="Top"/>
+                <TextBlock x:Name="TxtInstallerReady"
+                           Text="Update downloaded and verified. Click 'Install &amp; Restart FileOrgy' to close FileOrgy and launch the setup installer."
+                           Foreground="{DynamicResource Brush.SuccessText}"
+                           FontSize="12.5"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Inline Error Banner -->
+        <Border x:Name="InlineErrorBanner"
+                Grid.Row="4"
+                Background="{DynamicResource Brush.DangerSubtle}"
+                BorderBrush="{DynamicResource Brush.Danger}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource Radius.Md}"
+                Padding="12,10"
+                Margin="0,0,0,12"
+                Visibility="Collapsed"
+                AutomationProperties.AutomationId="InlineErrorBanner">
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource Icon.Error}"
+                      Fill="{DynamicResource Brush.DangerText}"
+                      Width="15"
+                      Height="15"
+                      Stretch="Uniform"
+                      Margin="0,2,10,0"
+                      VerticalAlignment="Top"/>
+                <TextBlock x:Name="TxtErrorBanner"
+                           Text="Update error."
+                           Foreground="{DynamicResource Brush.DangerText}"
+                           FontSize="12.5"
+                           TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
 
         <!-- Action Buttons -->
-        <DockPanel Grid.Row="3" LastChildFill="False">
-            <Button x:Name="BtnViewOnGitHub" Content="🌐 View on GitHub" Click="OnViewOnGitHubClick" Style="{StaticResource SecondaryButtonStyle}" DockPanel.Dock="Left"/>
+        <DockPanel Grid.Row="5" LastChildFill="False">
+            <Button x:Name="BtnViewOnGitHub"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnViewOnGitHubClick"
+                    DockPanel.Dock="Left"
+                    AutomationProperties.AutomationId="BtnViewOnGitHub"
+                    AutomationProperties.Name="View on GitHub">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.ExternalLink}"
+                          Fill="{DynamicResource Brush.TextSecondary}"
+                          Width="13"
+                          Height="13"
+                          Stretch="Uniform"
+                          Margin="0,0,7,0"
+                          VerticalAlignment="Center"/>
+                    <TextBlock Text="View on GitHub" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
 
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <Button x:Name="BtnCancel" Content="Later" Click="OnCancelClick" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"/>
-                <Button x:Name="BtnDownloadAndInstall" Content="⚡ Download &amp; Install Now" Click="OnDownloadAndInstallClick" Style="{StaticResource PrimaryButtonStyle}"/>
+                <Button x:Name="BtnCancel"
+                        Content="Later"
+                        Style="{StaticResource GhostButtonStyle}"
+                        Click="OnCancelClick"
+                        Margin="0,0,10,0"
+                        AutomationProperties.AutomationId="BtnUpdateLater"
+                        AutomationProperties.Name="Later"/>
+                <Button x:Name="BtnDownloadAndInstall"
+                        Content="Download &amp; Install Now"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Click="OnDownloadAndInstallClick"
+                        AutomationProperties.AutomationId="BtnDownloadAndInstall"
+                        AutomationProperties.Name="Download and Install Update"/>
             </StackPanel>
         </DockPanel>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>

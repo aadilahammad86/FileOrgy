@@ -4,655 +4,666 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:FileOrgy.App.Converters"
+        xmlns:views="clr-namespace:FileOrgy.App.Views"
         mc:Ignorable="d"
-        Title="FileOrgy - Lightweight Real-Time Folder Automation &amp; Organization"
-        Height="780" Width="1200"
-        MinHeight="650" MinWidth="950"
+        Title="FileOrgy — Real-Time Folder Automation &amp; Organization"
+        Height="800" Width="1280"
+        MinHeight="650" MinWidth="980"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True"
         WindowState="Normal"
-        Background="#0F172A"
-        Foreground="#F8FAFC"
-        FontFamily="Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif">
+        WindowStyle="None"
+        AllowsTransparency="False"
+        ResizeMode="CanResize"
+        Background="{DynamicResource Brush.Shell}"
+        Foreground="{DynamicResource Brush.TextPrimary}"
+        FontFamily="{StaticResource Font.UI}"
+        AutomationProperties.AutomationId="MainWindow"
+        AutomationProperties.Name="FileOrgy Main Window">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      ResizeBorderThickness="6"
+                      GlassFrameThickness="0"
+                      CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrush"/>
-        <converters:LogLevelToBrushConverter x:Key="LogLevelToBrush"/>
+        <converters:ToastSeverityToBrushConverter x:Key="ToastSeverityToBrush"/>
 
-        <Style x:Key="DataGridTextElementStyle" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-        </Style>
-
-        <!-- Modern Button Style -->
-        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#6366F1"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="14,7"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
+        <Style x:Key="TabContentTransitionStyle" TargetType="{x:Type FrameworkElement}">
+            <Setter Property="RenderTransform">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
+                    <TranslateTransform Y="0"/>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#4F46E5"/>
+                <Trigger Property="Visibility" Value="Visible">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 From="0.88" To="1"
+                                                 Duration="0:0:0.10">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                 From="4" To="0"
+                                                 Duration="0:0:0.10">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#1E293B"/>
-            <Setter Property="Foreground" Value="#E2E8F0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#334155"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="ConfirmationConfirmButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource PrimaryButtonStyle}">
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#334155"/>
-                </Trigger>
+                <DataTrigger Binding="{Binding Notifications.ActiveConfirmation.IsDestructive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brush.DangerSubtle}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.DangerText}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+                </DataTrigger>
             </Style.Triggers>
-        </Style>
-
-        <!-- Sidebar Nav Button -->
-        <Style x:Key="NavButtonStyle" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#94A3B8"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Padding" Value="14,10"/>
-            <Setter Property="Margin" Value="0,2"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="navBorder" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="navBorder" Property="Background" Value="#1E293B"/>
-                                <Setter Property="Foreground" Value="#F8FAFC"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="navBorder" Property="Background" Value="#312E81"/>
-                                <Setter Property="Foreground" Value="#A5B4FC"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
     </Window.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-
-        <!-- LEFT SIDEBAR -->
-        <Border Grid.Column="0" Background="#0B1120" BorderBrush="#1E293B" BorderThickness="0,0,1,0" Padding="16,20">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Brand / Logo -->
-                <StackPanel Grid.Row="0" Margin="0,0,0,24">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Background="#6366F1" CornerRadius="6" Width="30" Height="30" Margin="0,0,10,0">
-                            <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="FileOrgy" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock Text="Zero-Resource Automation" FontSize="11" Foreground="#64748B" Margin="40,2,0,0"/>
-                </StackPanel>
-
-                <!-- Navigation Tabs -->
-                <StackPanel Grid.Row="1">
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📊  Dashboard" IsChecked="{Binding IsDashboardTab, Mode=TwoWay}"/>
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📁  Watch Folders" IsChecked="{Binding IsWatchFoldersTab, Mode=TwoWay}"/>
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="⚡  Rules &amp; Workflows" IsChecked="{Binding IsRulesTab, Mode=TwoWay}"/>
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="🏷️  Variables &amp; Lists" IsChecked="{Binding IsVariablesTab, Mode=TwoWay}"/>
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="📜  Activity History" IsChecked="{Binding IsLogsTab, Mode=TwoWay}"/>
-                    <RadioButton Style="{StaticResource NavButtonStyle}" Content="⚙️  Settings" IsChecked="{Binding IsSettingsTab, Mode=TwoWay}"/>
-                </StackPanel>
-
-                <!-- Sidebar Footer Status Card -->
-                <Border Grid.Row="2" Background="#1E293B" CornerRadius="8" Padding="12" BorderBrush="#334155" BorderThickness="1">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Ellipse Width="8" Height="8" Fill="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToStatusBrush}}" Margin="0,0,8,0"/>
-                            <TextBlock Text="{Binding DashboardVM.StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="#E2E8F0"/>
-                        </StackPanel>
-                        <TextBlock Text="CPU: 0.0%  •  RAM: ~20MB" FontSize="10" Foreground="#64748B" Margin="16,4,0,0"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
-
-        <!-- RIGHT CONTENT AREA -->
-        <Grid Grid.Column="1">
+    <Border x:Name="ShellBorder"
+            Background="{DynamicResource Brush.Shell}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1">
+        <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="64"/>
+                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Top Header Bar -->
-            <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="24,0">
-                <Grid VerticalAlignment="Center">
+            <!-- ROW 0: CUSTOM TITLE BAR -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource Brush.TitleBar}"
+                    BorderBrush="{DynamicResource Brush.Divider}"
+                    BorderThickness="0,0,0,1"
+                    AutomationProperties.AutomationId="TitleBar">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Automated File Management" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC"/>
-                        <TextBlock Text="Real-time directory monitoring and dynamic rule execution" FontSize="12" Foreground="#64748B"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <!-- Update Pill (Shown only when update available) -->
-                        <Border Visibility="{Binding HasPendingUpdate, Converter={StaticResource BoolToVis}}"
-                                Background="#1E1B4B" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="6"
-                                Padding="8,4" Margin="0,0,12,0" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="🚀 Update:" FontSize="11" FontWeight="SemiBold" Foreground="#A5B4FC" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding PendingUpdateVersion}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="4,0,8,0"/>
-                                <Button Content="Install" Command="{Binding OpenPendingUpdateDialogCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="8,3" FontSize="11" Margin="0,0,6,0"/>
-                                <Button Content="✕" Command="{Binding DismissPendingUpdateNotificationCommand}" Background="Transparent" Foreground="#A5B4FC" BorderThickness="0" Padding="4,2" FontSize="11" Cursor="Hand" ToolTip="Dismiss update banner"/>
-                            </StackPanel>
+                    <!-- Brand + Monitoring Pulse Pill -->
+                    <StackPanel Grid.Column="0"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="14,0,0,0">
+                        <Border Width="24" Height="24"
+                                CornerRadius="{StaticResource Radius.Sm}"
+                                Background="{DynamicResource Brush.Accent}"
+                                VerticalAlignment="Center"
+                                Margin="0,0,10,0">
+                            <Path Data="{StaticResource Icon.LogoFolderBolt}"
+                                  Fill="{DynamicResource Brush.TextOnAccent}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
                         </Border>
 
-                        <Button Content="{Binding DashboardVM.ToggleMonitoringButtonText}"
-                                Command="{Binding DashboardVM.ToggleMonitoringCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"/>
-                        <Button Content="⚡ Scan Monitored Folders" Command="{Binding DashboardVM.ScanMonitoredFoldersCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"/>
-                        <Button Content="📂 Browse &amp; Scan..." Command="{Binding DashboardVM.ScanCustomFolderCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                        <TextBlock Text="FileOrgy"
+                                   FontFamily="{StaticResource Font.Display}"
+                                   FontSize="13.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+
+                        <Border Background="{DynamicResource Brush.Well}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Pill}"
+                                Padding="8,2"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="TitleBarMonitoringPill">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="7" Height="7"
+                                         Fill="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToStatusBrush}}"
+                                         Margin="0,0,6,0"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DashboardVM.StatusText}"
+                                           FontSize="11"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right Window Controls -->
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Stretch"
+                                WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource CaptionButtonStyle}"
+                                Command="{Binding ToggleThemeCommand}"
+                                ToolTip="Toggle Dark / Light Theme"
+                                AutomationProperties.AutomationId="TitleBarThemeToggleButton"
+                                AutomationProperties.Name="Toggle Dark or Light Theme">
+                            <Path Width="13" Height="13"
+                                  Stretch="Uniform"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
+                                <Path.Style>
+                                    <Style TargetType="{x:Type Path}">
+                                        <Setter Property="Data" Value="{StaticResource Icon.Moon}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDarkMode}" Value="True">
+                                                <Setter Property="Data" Value="{StaticResource Icon.Sun}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                        </Button>
+
+                        <Button Style="{StaticResource CaptionButtonStyle}"
+                                Click="OnMinimizeClick"
+                                ToolTip="Minimize"
+                                AutomationProperties.AutomationId="TitleBarMinimizeButton"
+                                AutomationProperties.Name="Minimize Window">
+                            <Path Data="{StaticResource Icon.Minimize}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="11" Height="11"
+                                  Stretch="Uniform"/>
+                        </Button>
+
+                        <Button x:Name="MaximizeRestoreButton"
+                                Style="{StaticResource CaptionButtonStyle}"
+                                Click="OnMaximizeRestoreClick"
+                                ToolTip="Maximize"
+                                AutomationProperties.AutomationId="TitleBarMaximizeButton"
+                                AutomationProperties.Name="Maximize Window">
+                            <Path x:Name="MaximizeRestoreIcon"
+                                  Data="{StaticResource Icon.Maximize}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="11" Height="11"
+                                  Stretch="Uniform"/>
+                        </Button>
+
+                        <Button Style="{StaticResource CaptionCloseButtonStyle}"
+                                Click="OnCloseClick"
+                                ToolTip="Close"
+                                AutomationProperties.AutomationId="TitleBarCloseButton"
+                                AutomationProperties.Name="Close Window">
+                            <Path Data="{StaticResource Icon.Close}"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  Width="11" Height="11"
+                                  Stretch="Uniform"/>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Main Content Panels -->
-            <Grid Grid.Row="1" Margin="24">
+            <!-- ROW 1: NAVIGATION RAIL + WORKSPACE CANVAS -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- 1. DASHBOARD VIEW -->
-                <Grid Visibility="{Binding IsDashboardTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding DashboardVM}">
+                <!-- LEFT NAVIGATION RAIL -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource Brush.Shell}"
+                        BorderBrush="{DynamicResource Brush.Divider}"
+                        BorderThickness="0,0,1,0"
+                        Padding="12,16,12,14"
+                        AutomationProperties.AutomationId="NavigationRail">
+                    <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- KPI Cards Row -->
-                        <Grid Grid.Row="0" Margin="0,0,0,24">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="WORKSPACE"
+                                       Style="{StaticResource Text.Caption}"
+                                       Margin="10,0,0,8"/>
 
-                            <!-- Card 1: Total Processed -->
-                            <Border Grid.Column="0" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Total Files Processed" FontSize="12" Foreground="#94A3B8"/>
-                                    <TextBlock Text="{Binding TotalFilesProcessed}" FontSize="28" FontWeight="Bold" Foreground="#818CF8" Margin="0,4,0,0"/>
-                                    <TextBlock Text="Since startup" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsDashboardTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavOverview"
+                                         AutomationProperties.Name="Overview">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Overview}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Overview" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
+                            </RadioButton>
 
-                            <!-- Card 2: Today -->
-                            <Border Grid.Column="2" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Operations Today" FontSize="12" Foreground="#94A3B8"/>
-                                    <TextBlock Text="{Binding OperationsToday}" FontSize="28" FontWeight="Bold" Foreground="#38BDF8" Margin="0,4,0,0"/>
-                                    <TextBlock Text="Automated events" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsWatchFoldersTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavWatchFolders"
+                                         AutomationProperties.Name="Watch Folders">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Folder}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Watch Folders" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
+                            </RadioButton>
 
-                            <!-- Card 3: Watch Folders -->
-                            <Border Grid.Column="4" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Active Watch Folders" FontSize="12" Foreground="#94A3B8"/>
-                                    <TextBlock Text="{Binding ActiveFoldersCount}" FontSize="28" FontWeight="Bold" Foreground="#34D399" Margin="0,4,0,0"/>
-                                    <TextBlock Text="Instant kernel hooks" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsRulesTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavRules"
+                                         AutomationProperties.Name="Rules">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Workflow}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Rules" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
+                            </RadioButton>
 
-                            <!-- Card 4: Space Saved -->
-                            <Border Grid.Column="6" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="Cleaned / Saved Space" FontSize="12" Foreground="#94A3B8"/>
-                                    <TextBlock Text="{Binding StorageSavedText}" FontSize="28" FontWeight="Bold" Foreground="#FBBF24" Margin="0,4,0,0"/>
-                                    <TextBlock Text="Safe Recycle Bin undo" FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsVariablesTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavVariables"
+                                         AutomationProperties.Name="Variables and Lists">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Tag}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Variables &amp; Lists" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </Border>
-                        </Grid>
+                            </RadioButton>
 
-                        <!-- Real-Time Activity Stream -->
-                        <Border Grid.Row="1" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsLogsTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavLogs"
+                                         AutomationProperties.Name="Logs">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.History}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Logs" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
 
-                                <Grid Grid.Row="0" Margin="0,0,0,14">
-                                    <TextBlock Text="Real-Time Operation Feed" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                                    <Button Content="Clear History" Command="{Binding ClearActivityCommand}" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Right"/>
+                            <RadioButton Style="{StaticResource NavRailRadioButtonStyle}"
+                                         GroupName="MainNav"
+                                         IsChecked="{Binding IsSettingsTab, Mode=TwoWay}"
+                                         AutomationProperties.AutomationId="NavSettings"
+                                         AutomationProperties.Name="Settings">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Settings}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          Margin="0,0,10,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+
+                        <!-- Rail Footer Telemetry -->
+                        <Border Grid.Row="1"
+                                BorderBrush="{DynamicResource Brush.Divider}"
+                                BorderThickness="0,1,0,0"
+                                Padding="6,12,6,0"
+                                AutomationProperties.AutomationId="RailFooterTelemetry">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="7" Height="7"
+                                             Fill="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToStatusBrush}}"
+                                             Margin="0,0,8,0"
+                                             VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DashboardVM.StatusText}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Brush.TextPrimary}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding ActiveWatchSummaryText}"
+                                           Style="{StaticResource Text.Muted}"
+                                           Margin="15,4,0,0"
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <Grid Margin="15,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding MemoryUsageText}"
+                                               Style="{StaticResource Text.Caption}"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding SettingsVM.CurrentVersionText}"
+                                               Style="{StaticResource Text.Caption}"/>
                                 </Grid>
-
-                                <DataGrid Grid.Row="1" ItemsSource="{Binding RecentActivity}" AutoGenerateColumns="False" IsReadOnly="True"
-                                          Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
-                                          HeadersVisibility="Column" RowHeaderWidth="0"
-                                          ColumnHeaderHeight="38" RowHeight="36"
-                                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#1E293B"
-                                          RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Time" Binding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="85" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTemplateColumn Header="Level" Width="90">
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Event" Binding="{Binding EventType}" Width="120" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="150" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTextColumn Header="Details / Message" Binding="{Binding Details}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTextColumn Header="Duration" Binding="{Binding DurationMs, StringFormat={}{0}ms}" Width="80" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Grid>
+                            </StackPanel>
                         </Border>
                     </Grid>
-                </Grid>
+                </Border>
 
-                <!-- 2. WATCH FOLDERS VIEW -->
-                <Grid Visibility="{Binding IsWatchFoldersTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding WatchFoldersVM}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                <!-- RIGHT WORKSPACE CANVAS -->
+                <Grid Grid.Column="1" Background="{DynamicResource Brush.Canvas}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                    <!-- Top Contextual Header -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource Brush.Divider}"
+                            BorderThickness="0,0,0,1"
+                            Padding="24,18,24,14"
+                            AutomationProperties.AutomationId="WorkspaceHeader">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Monitored Directories" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button Content="⚡ Scan Selected" Command="{Binding ScanFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
-                                <Button Content="🗑 Remove Folder" Command="{Binding RemoveFolderCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"/>
-                                <Button Content="+ Add Watch Folder" Command="{Binding AddFolderCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="{Binding ActivePageTitle}"
+                                           Style="{StaticResource Text.PageTitle}"
+                                           AutomationProperties.AutomationId="ActivePageTitle"/>
+                                <TextBlock Text="{Binding ActivePageSubtitle}"
+                                           Style="{StaticResource Text.Secondary}"
+                                           Margin="0,2,0,0"
+                                           TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
+
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding ScanMonitoredFoldersAsyncCommand}"
+                                    ToolTip="Scan all active watch folders now (F5)"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="HeaderScanMonitoredButton"
+                                    AutomationProperties.Name="Scan Monitored Folders">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Scan}"
+                                          Fill="{DynamicResource Brush.TextOnAccent}"
+                                          Width="14" Height="14"
+                                          Stretch="Uniform"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Scan Monitored Folders" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </Grid>
+                    </Border>
 
-                        <ListBox Grid.Row="1" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}"
-                                 Background="Transparent" BorderThickness="0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-
-                                            <StackPanel Grid.Column="1">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                                    <Border Background="#312E81" CornerRadius="4" Padding="6,2" Margin="10,0,0,0">
-                                                        <TextBlock Text="{Binding DebounceDelayMs, StringFormat={}Debounce: {0}ms}" FontSize="10" Foreground="#A5B4FC"/>
-                                                    </Border>
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding FolderPath}" FontSize="12" Foreground="#94A3B8" Margin="0,3,0,6"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <CheckBox Content="Include Subdirectories" IsChecked="{Binding IncludeSubdirectories}" Foreground="#94A3B8" Margin="0,0,16,0"/>
-                                                    <TextBlock Text="{Binding IgnorePatternsText, StringFormat={}Ignored: {0}}" FontSize="11" Foreground="#64748B"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
-                </Grid>
-
-                <!-- 3. RULES & WORKFLOWS VIEW -->
-                <Grid Visibility="{Binding IsRulesTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding RulesVM}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Row 0: Top bar -->
-                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <!-- Startup Diagnostic Warning InfoBar -->
+                    <Border Grid.Row="1"
+                            Visibility="{Binding ShowGlobalStartupWarningBanner, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource Brush.WarningSubtle}"
+                            BorderBrush="{DynamicResource Brush.Warning}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.Md}"
+                            Padding="14,8"
+                            Margin="24,10,24,0"
+                            AutomationProperties.AutomationId="StartupWarningInfoBar"
+                            AutomationProperties.Name="Startup Diagnostic Warning">
+                        <Grid>
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Automation Rules &amp; Multi-Step Workflows" FontSize="18" FontWeight="SemiBold" Foreground="#F8FAFC" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="Define conditions, triggers, and automated execution sequences for your files" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            <Path Grid.Column="0"
+                                  Data="{StaticResource Icon.Warning}"
+                                  Fill="{DynamicResource Brush.WarningText}"
+                                  Width="16" Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,2,12,0"
+                                  VerticalAlignment="Top"/>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{Binding StartupStatus.StatusTitle}"
+                                           Style="{StaticResource Text.CardTitle}"
+                                           Foreground="{DynamicResource Brush.WarningText}"/>
+                                <TextBlock Text="{Binding StartupStatus.DiagnosticDetail}"
+                                           Style="{StaticResource Text.Secondary}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
 
-                            <WrapPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button Content="💡 Rule Guide" Click="OnOpenRuleGuideClick" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Open the interactive Automation Rules &amp; Workflows Guide"/>
-                                <Button Content="📥 In-Place Presets" Command="{Binding LoadInPlacePresetsCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" ToolTip="Load or restore universal in-place category rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others)"/>
-                                <Button Content="+ New Rule" Command="{Binding AddRuleCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
-                            </WrapPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource GhostButtonStyle}"
+                                        Command="{Binding OpenStartupSettingsCommand}"
+                                        Content="Inspect in Settings"
+                                        Margin="0,0,8,0"
+                                        AutomationProperties.AutomationId="BannerInspectStartupButton"/>
+                                <Button Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding RepairStartupFromBannerCommand}"
+                                        Content="Repair Now"
+                                        AutomationProperties.AutomationId="BannerRepairStartupButton"/>
+                            </StackPanel>
                         </Grid>
+                    </Border>
 
-                        <!-- Row 1: Rule Action Toolbar -->
-                        <Border Grid.Row="1" Background="#162032" CornerRadius="8" Padding="8,6" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,12">
-                            <WrapPanel VerticalAlignment="Center">
-                                <TextBlock Text="Selected Rule:" Foreground="#94A3B8" VerticalAlignment="Center" Margin="6,0,12,0" FontSize="12" FontWeight="SemiBold"/>
-                                <Button Content="▲ Move Up" Command="{Binding MoveUpCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                <Button Content="▼ Move Down" Command="{Binding MoveDownCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                <Button Content="📋 Duplicate" Command="{Binding DuplicateRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                <Button Content="✏️ Edit Rule" Command="{Binding EditRuleCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                <Button Content="🗑 Delete" Command="{Binding RemoveRuleCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
-                            </WrapPanel>
-                        </Border>
+                    <!-- Pending Update InfoBar -->
+                    <Border Grid.Row="2"
+                            Visibility="{Binding HasPendingUpdate, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource Brush.AccentSubtle}"
+                            BorderBrush="{DynamicResource Brush.AccentBorder}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.Md}"
+                            Padding="14,8"
+                            Margin="24,8,24,0"
+                            AutomationProperties.AutomationId="PendingUpdateInfoBar"
+                            AutomationProperties.Name="Pending Update Notification">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <ListBox Grid.Row="2" ItemsSource="{Binding Rules}" SelectedItem="{Binding SelectedRule}"
-                                 Background="Transparent" BorderThickness="0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#1E293B" CornerRadius="8" Padding="16" Margin="0,0,0,12" BorderBrush="#334155" BorderThickness="1">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                            <Path Grid.Column="0"
+                                  Data="{StaticResource Icon.Info}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="16" Height="16"
+                                  Stretch="Uniform"
+                                  Margin="0,0,12,0"
+                                  VerticalAlignment="Center"/>
 
-                                            <!-- Priority Badge -->
-                                            <Border Grid.Column="0" Background="#312E81" CornerRadius="6" Width="28" Height="28" Margin="0,0,14,0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Priority}" FontSize="12" FontWeight="Bold" Foreground="#A5B4FC" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource Text.Body}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,12,0">
+                                <Run Text="A new release of FileOrgy is available: "/>
+                                <Run Text="{Binding PendingUpdateVersion, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.AccentText}"/>
+                            </TextBlock>
 
-                                            <CheckBox Grid.Column="1" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource PrimaryButtonStyle}"
+                                        Command="{Binding OpenPendingUpdateDialogCommand}"
+                                        Content="View Update"
+                                        Margin="0,0,6,0"
+                                        AutomationProperties.AutomationId="BannerViewUpdateButton"/>
+                                <Button Style="{StaticResource IconButtonStyle}"
+                                        Command="{Binding DismissPendingUpdateNotificationCommand}"
+                                        ToolTip="Dismiss update notice"
+                                        AutomationProperties.AutomationId="BannerDismissUpdateButton"
+                                        AutomationProperties.Name="Dismiss Update Notification">
+                                    <Path Data="{StaticResource Icon.Close}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="11" Height="11"
+                                          Stretch="Uniform"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
-                                            <StackPanel Grid.Column="2">
-                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,6"/>
-                                                <Border Background="#0F172A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
-                                                    <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="#38BDF8"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                    <!-- Main View Host -->
+                    <Grid Grid.Row="3">
+                        <views:OverviewView DataContext="{Binding}"
+                                            Style="{StaticResource TabContentTransitionStyle}"
+                                            Visibility="{Binding IsDashboardTab, Converter={StaticResource BoolToVis}}"/>
+
+                        <views:WatchFoldersView DataContext="{Binding WatchFoldersVM}"
+                                                Style="{StaticResource TabContentTransitionStyle}"
+                                                Visibility="{Binding DataContext.IsWatchFoldersTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+
+                        <views:RulesView DataContext="{Binding}"
+                                         Style="{StaticResource TabContentTransitionStyle}"
+                                         Visibility="{Binding IsRulesTab, Converter={StaticResource BoolToVis}}"/>
+
+                        <views:VariablesView DataContext="{Binding VariablesVM}"
+                                             Style="{StaticResource TabContentTransitionStyle}"
+                                             Visibility="{Binding DataContext.IsVariablesTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+
+                        <views:LogsView DataContext="{Binding LogsVM}"
+                                        Style="{StaticResource TabContentTransitionStyle}"
+                                        Visibility="{Binding DataContext.IsLogsTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+
+                        <views:SettingsView DataContext="{Binding SettingsVM}"
+                                            Style="{StaticResource TabContentTransitionStyle}"
+                                            Visibility="{Binding DataContext.IsSettingsTab, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
                     </Grid>
                 </Grid>
+            </Grid>
 
-                <!-- 4. VARIABLES & LISTS VIEW -->
-                <Grid Visibility="{Binding IsVariablesTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding VariablesVM}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1*"/>
-                            <ColumnDefinition Width="20"/>
-                            <ColumnDefinition Width="1.2*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Left: Custom Variables -->
-                        <Border Grid.Column="0" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-
-                                <Grid Grid.Row="0" Margin="0,0,0,14">
-                                    <TextBlock Text="Custom Variables" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="🗑 Remove" Command="{Binding RemoveVariableCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                        <Button Content="+ Add Variable" Command="{Binding AddVariableCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <DataGrid Grid.Row="1" ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedVariable}"
-                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
-                                          HeadersVisibility="Column" RowHeaderWidth="0"
-                                          ColumnHeaderHeight="38" RowHeight="36"
-                                          RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Variable Key ({var:Key})" Binding="{Binding Key}" Width="160" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Grid>
-                        </Border>
-
-                        <!-- Right: Reusable Keyword Lists -->
-                        <Border Grid.Column="2" Background="#1E293B" CornerRadius="10" Padding="18" BorderBrush="#334155" BorderThickness="1">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-
-                                <Grid Grid.Row="0" Margin="0,0,0,14">
-                                    <TextBlock Text="Reusable Keyword Lists" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="🗑 Remove" Command="{Binding RemoveKeywordListCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                        <Button Content="+ Add Keyword List" Command="{Binding AddKeywordListCommand}" Style="{StaticResource PrimaryButtonStyle}"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <DataGrid Grid.Row="1" ItemsSource="{Binding KeywordLists}" SelectedItem="{Binding SelectedKeywordList}"
-                                          AutoGenerateColumns="False" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
-                                          HeadersVisibility="Column" RowHeaderWidth="0"
-                                          ColumnHeaderHeight="38" RowHeight="36"
-                                          RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="List Name" Binding="{Binding Name}" Width="140" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                        <DataGridTextColumn Header="Keywords (comma separated)" Binding="{Binding KeywordsText}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </Grid>
-
-                <!-- 5. ACTIVITY LOGS VIEW -->
-                <Grid Visibility="{Binding IsLogsTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding LogsVM}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Filter Bar -->
-                        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="12" Margin="0,0,0,14" BorderBrush="#334155" BorderThickness="1">
+            <!-- OVERLAY 1: TOAST SNACKBARS -->
+            <ItemsControl Grid.Row="0"
+                          Grid.RowSpan="2"
+                          ItemsSource="{Binding Notifications.Toasts}"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Bottom"
+                          Margin="24"
+                          Width="360"
+                          Background="{x:Null}"
+                          AutomationProperties.AutomationId="ToastOverlay">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Brush.SurfaceElevated}"
+                                BorderBrush="{DynamicResource Brush.BorderStrong}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Lg}"
+                                Margin="0,8,0,0"
+                                SnapsToDevicePixels="True">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.32" Color="#000000"/>
+                            </Border.Effect>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220"/>
-                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBox Grid.Column="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Margin="0,0,10,0"/>
+                                <Border Grid.Column="0"
+                                        Background="{Binding Severity, Converter={StaticResource ToastSeverityToBrush}}"
+                                        CornerRadius="8,0,0,8"/>
 
-                                <ComboBox Grid.Column="1" SelectedValue="{Binding SelectedLevelFilter, Mode=TwoWay}" SelectedValuePath="Content"
-                                          Background="#0F172A" Foreground="#F8FAFC" Margin="0,0,10,0">
-                                    <ComboBoxItem Content="All"/>
-                                    <ComboBoxItem Content="Success"/>
-                                    <ComboBoxItem Content="Error"/>
-                                    <ComboBoxItem Content="Warning"/>
-                                    <ComboBoxItem Content="Info"/>
-                                </ComboBox>
-
-                                <StackPanel Grid.Column="3" Orientation="Horizontal">
-                                    <Button Content="Export CSV" Command="{Binding ExportCsvCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                    <Button Content="Export JSON" Command="{Binding ExportJsonCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,6,0"/>
-                                    <Button Content="Clear Logs" Command="{Binding ClearLogsCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                                <StackPanel Grid.Column="1" Margin="14,12,10,12">
+                                    <TextBlock Text="{Binding Title}"
+                                               Style="{StaticResource Text.CardTitle}"/>
+                                    <TextBlock Text="{Binding Message}"
+                                               Style="{StaticResource Text.Secondary}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,3,0,0"/>
                                 </StackPanel>
+
+                                <Button Grid.Column="2"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Tag="{Binding Id}"
+                                        Click="OnDismissToastClick"
+                                        VerticalAlignment="Top"
+                                        Margin="0,8,8,0"
+                                        ToolTip="Dismiss"
+                                        AutomationProperties.Name="Dismiss Notification">
+                                    <Path Data="{StaticResource Icon.Close}"
+                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                          Width="10" Height="10"
+                                          Stretch="Uniform"/>
+                                </Button>
                             </Grid>
                         </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-                        <!-- Logs Table -->
-                        <DataGrid Grid.Row="1" ItemsSource="{Binding Logs}" SelectedItem="{Binding SelectedLog}"
-                                  AutoGenerateColumns="False" IsReadOnly="True" Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
-                                  HeadersVisibility="Column" RowHeaderWidth="0"
-                                  ColumnHeaderHeight="38" RowHeight="36"
-                                  RowBackground="#0F172A" AlternatingRowBackground="#141E33" Foreground="#E2E8F0">
-                            <DataGrid.ContextMenu>
-                                <ContextMenu Background="#1E293B" Foreground="#F8FAFC">
-                                    <MenuItem Header="Open Source in Explorer" Command="{Binding OpenSourceInExplorerCommand}"/>
-                                    <MenuItem Header="Open Destination in Explorer" Command="{Binding OpenDestInExplorerCommand}"/>
-                                    <MenuItem Header="Copy File Path" Command="{Binding CopyPathCommand}"/>
-                                </ContextMenu>
-                            </DataGrid.ContextMenu>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="145" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                <DataGridTemplateColumn Header="Status" Width="90">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{Binding Level, Converter={StaticResource LogLevelToBrush}}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Level}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Event Type" Binding="{Binding EventType}" Width="120" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                <DataGridTextColumn Header="Rule" Binding="{Binding RuleName}" Width="140" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                <DataGridTextColumn Header="Source" Binding="{Binding SourcePath}" Width="170" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                <DataGridTextColumn Header="Destination" Binding="{Binding DestinationPath}" Width="170" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*" ElementStyle="{StaticResource DataGridTextElementStyle}"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
-                </Grid>
+            <!-- OVERLAY 2: IN-APP MODAL CONFIRMATION SHEET -->
+            <Grid Grid.Row="0"
+                  Grid.RowSpan="2"
+                  Visibility="{Binding Notifications.HasActiveConfirmation, Converter={StaticResource BoolToVis}}"
+                  Background="{DynamicResource Brush.ModalBackdrop}"
+                  AutomationProperties.AutomationId="ConfirmationModalOverlay"
+                  AutomationProperties.Name="Confirmation Dialog">
+                <Border Style="{StaticResource CardBorderStyle}"
+                        Background="{DynamicResource Brush.SurfaceElevated}"
+                        BorderBrush="{DynamicResource Brush.BorderStrong}"
+                        MaxWidth="460"
+                        MinWidth="380"
+                        Padding="24"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.45" Color="#000000"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Notifications.ActiveConfirmation.Title}"
+                                   Style="{StaticResource Text.SectionTitle}"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Notifications.ActiveConfirmation.Message}"
+                                   Style="{StaticResource Text.Body}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,22"/>
 
-                <!-- 6. SETTINGS VIEW -->
-                <Grid Visibility="{Binding IsSettingsTab, Converter={StaticResource BoolToVis}}">
-                    <Grid DataContext="{Binding SettingsVM}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,0,24">
-                                <!-- Application Settings Card -->
-                                <Border Background="#1E293B" CornerRadius="10" Padding="24" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,16">
-                                    <StackPanel>
-                                        <TextBlock Text="Application Settings &amp; Resource Optimization" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC" Margin="0,0,0,16"/>
-
-                                        <CheckBox Content="Launch FileOrgy on Windows Startup (in system tray)" IsChecked="{Binding StartWithWindows}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
-                                        <CheckBox Content="Automatically scan monitored folders on startup (organizes files that arrived while offline)" IsChecked="{Binding ScanOnStartup}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
-                                        <CheckBox Content="Minimize to System Tray when closing window" IsChecked="{Binding MinimizeToTrayOnClose}" Foreground="#F8FAFC" Margin="0,0,0,12"/>
-                                        <CheckBox Content="Show desktop balloon notifications on file operations" IsChecked="{Binding ShowDesktopNotifications}" Foreground="#F8FAFC" Margin="0,0,0,20"/>
-
-                                        <TextBlock Text="Global Debounce Delay (ms)" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Prevents reading files while still copying or downloading." FontSize="11" Foreground="#64748B" Margin="0,0,0,6"/>
-                                        <TextBox Text="{Binding GlobalDebounceDelayMs, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left" Margin="0,0,0,16"/>
-
-                                        <TextBlock Text="Max Concurrent Worker Threads" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Limits background concurrency to keep CPU usage near zero." FontSize="11" Foreground="#64748B" Margin="0,0,0,6"/>
-                                        <TextBox Text="{Binding MaxConcurrentOperations, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left" Margin="0,0,0,16"/>
-
-                                        <TextBlock Text="Log Retention Days" FontSize="12" FontWeight="SemiBold" Foreground="#94A3B8" Margin="0,0,0,4"/>
-                                        <TextBox Text="{Binding LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,5" Width="160" HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Software Updates Card -->
-                                <Border Background="#1E293B" CornerRadius="10" Padding="24" BorderBrush="#334155" BorderThickness="1">
-                                    <StackPanel>
-                                        <Grid Margin="0,0,0,12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="Software Updates &amp; Repository Releases" FontSize="16" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                                <TextBlock Text="Automatic updates pulled directly from the GitHub releases pipeline." FontSize="11" Foreground="#64748B" Margin="0,2,0,0"/>
-                                            </StackPanel>
-                                            <Border Grid.Column="1" Background="#0F172A" CornerRadius="4" Padding="8,4" BorderBrush="#334155" BorderThickness="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding CurrentVersionText}" FontSize="12" FontWeight="SemiBold" Foreground="#818CF8"/>
-                                            </Border>
-                                        </Grid>
-
-                                        <CheckBox Content="Automatically check for updates on startup" IsChecked="{Binding AutoCheckForUpdates}" Foreground="#F8FAFC" Margin="0,0,0,14"/>
-
-                                        <Border Background="#0F172A" CornerRadius="8" Padding="14,12" Margin="0,0,0,14" BorderBrush="#1E293B" BorderThickness="1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="Status:" FontSize="11" Foreground="#64748B"/>
-                                                    <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" FontWeight="SemiBold" Foreground="#E2E8F0" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <Button Content="🌐 View on GitHub" Command="{Binding OpenReleasesUrlCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="10,6" FontSize="12"/>
-                                                    <Button Content="🔄 Check for Updates" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SecondaryButtonStyle}" Padding="10,6" FontSize="12"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-
-                                        <Border Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BoolToVis}}" Background="#1E1B4B" CornerRadius="8" Padding="14" BorderBrush="#6366F1" BorderThickness="1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="✨ A new update is available to install!" FontSize="13" FontWeight="Bold" Foreground="#A5B4FC"/>
-                                                    <TextBlock Text="Click to review release notes and start seamless in-app installation." FontSize="11" Foreground="#C7D2FE" Margin="0,3,0,0"/>
-                                                </StackPanel>
-                                                <Button Grid.Column="1" Content="🚀 View &amp; Install Update" Command="{Binding ShowUpdateDialogCommand}" Style="{StaticResource PrimaryButtonStyle}" Padding="14,8" VerticalAlignment="Center"/>
-                                            </Grid>
-                                        </Border>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </Grid>
-                </Grid>
-
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="{Binding Notifications.ActiveConfirmation.CancelLabel}"
+                                    Click="OnCancelConfirmationClick"
+                                    Margin="0,0,10,0"
+                                    MinWidth="88"
+                                    AutomationProperties.AutomationId="ModalCancelButton"
+                                    AutomationProperties.Name="Cancel"/>
+                            <Button Style="{StaticResource ConfirmationConfirmButtonStyle}"
+                                    Content="{Binding Notifications.ActiveConfirmation.ConfirmLabel}"
+                                    Click="OnConfirmConfirmationClick"
+                                    MinWidth="96"
+                                    AutomationProperties.AutomationId="ModalConfirmButton"
+                                    AutomationProperties.Name="Confirm"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
+
         </Grid>
-    </Grid>
+    </Border>
 </Window>

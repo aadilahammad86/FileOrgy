@@ -31,7 +31,7 @@ The Main Orchestrator must display and maintain a live status panel in the CLI/c
 | `Agent-UI` | UI/UX Specialist | 🔄 `[⠙ Running]` | 80% | Rendering live animations |
 | `Agent-QA` | QA & Test Engineer | ⏳ `[Queued]` | 0% | Awaiting UI completion |
 
-> **Dependencies:** None active • **Live Animated HUD:** [`tools/orchestrator_hud.html`](file:///C:/Users/swalih/FileOrgy/tools/orchestrator_hud.html)
+> **Dependencies:** None active • **Live Animated HUD:** [tools/orchestrator_hud.html](tools/orchestrator_hud.html)
 
 ---
 

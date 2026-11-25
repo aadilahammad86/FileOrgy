@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows;
 using FileOrgy.App.Services;
-using WpfMessageBox = System.Windows.MessageBox;
 
 namespace FileOrgy.App.Views
 {
@@ -12,12 +11,14 @@ namespace FileOrgy.App.Views
         private readonly UpdateInfo _updateInfo;
         private readonly UpdateService _updateService;
         private CancellationTokenSource? _cts;
+        private string? _downloadedInstallerPath;
 
         public UpdateDialog(UpdateInfo updateInfo, UpdateService updateService)
         {
             InitializeComponent();
             _updateInfo = updateInfo;
             _updateService = updateService;
+            SourceInitialized += (_, _) => ThemeService.ApplyWindowDarkMode(this, ThemeService.IsDark);
 
             PopulateInfo();
         }
@@ -45,6 +46,22 @@ namespace FileOrgy.App.Views
 
         private async void OnDownloadAndInstallClick(object sender, RoutedEventArgs e)
         {
+            if (!string.IsNullOrEmpty(_downloadedInstallerPath))
+            {
+                try
+                {
+                    _updateService.LaunchInstallerAndExit(_downloadedInstallerPath);
+                    Close();
+                }
+                catch (Exception ex)
+                {
+                    ShowError($"Could not launch installer: {ex.Message}");
+                }
+                return;
+            }
+
+            InlineErrorBanner.Visibility = Visibility.Collapsed;
+            InstallerReadyBanner.Visibility = Visibility.Collapsed;
             BtnDownloadAndInstall.IsEnabled = false;
             BtnCancel.IsEnabled = false;
             ProgressSection.Visibility = Visibility.Visible;
@@ -60,33 +77,29 @@ namespace FileOrgy.App.Views
             try
             {
                 string installerPath = await _updateService.DownloadUpdateAsync(_updateInfo, progress, _cts.Token);
-                TxtProgressStatus.Text = "Download complete! Launching installer...";
+                _downloadedInstallerPath = installerPath;
 
-                var result = WpfMessageBox.Show(
-                    $"Update {_updateInfo.LatestVersion} has been downloaded successfully.\n\nFileOrgy will now close to run the setup installer. Click OK to continue.",
-                    "Ready to Install Update",
-                    MessageBoxButton.OKCancel,
-                    MessageBoxImage.Information);
+                PbDownload.Value = 100;
+                TxtProgressPercent.Text = "100%";
+                TxtProgressStatus.Text = "Download complete.";
 
-                if (result == MessageBoxResult.OK)
-                {
-                    _updateService.LaunchInstallerAndExit(installerPath);
-                }
-                else
-                {
-                    BtnDownloadAndInstall.IsEnabled = true;
-                    BtnCancel.IsEnabled = true;
-                }
+                TxtInstallerReady.Text = $"Update {_updateInfo.LatestVersion} downloaded and ready. Click 'Install & Restart FileOrgy' to close FileOrgy and run setup.";
+                InstallerReadyBanner.Visibility = Visibility.Visible;
+
+                BtnDownloadAndInstall.Content = "Install & Restart FileOrgy";
+                BtnDownloadAndInstall.IsEnabled = true;
+                BtnCancel.IsEnabled = true;
+            }
+            catch (OperationCanceledException)
+            {
+                ProgressSection.Visibility = Visibility.Collapsed;
+                BtnDownloadAndInstall.IsEnabled = true;
+                BtnCancel.IsEnabled = true;
             }
             catch (Exception ex)
             {
-                WpfMessageBox.Show(
-                    $"Failed to download update:\n{ex.Message}\n\nYou can manually download the installer from GitHub.",
-                    "Update Download Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-
                 ProgressSection.Visibility = Visibility.Collapsed;
+                ShowError($"Failed to download update: {ex.Message} You can manually download the installer from GitHub.");
                 BtnDownloadAndInstall.IsEnabled = true;
                 BtnCancel.IsEnabled = true;
             }
@@ -108,8 +121,14 @@ namespace FileOrgy.App.Views
             }
             catch (Exception ex)
             {
-                WpfMessageBox.Show($"Could not open browser: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowError($"Could not open browser: {ex.Message}");
             }
+        }
+
+        private void ShowError(string message)
+        {
+            TxtErrorBanner.Text = message;
+            InlineErrorBanner.Visibility = Visibility.Visible;
         }
 
         private void OnCancelClick(object sender, RoutedEventArgs e)

@@ -6,7 +6,7 @@
 
 #define MyAppName "FileOrgy"
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "2.0.0"
 #endif
 #define MyAppPublisher "FileOrgy"
 #define MyAppURL "https://github.com/aadilahammad86/FileOrgy"
@@ -109,11 +109,11 @@ Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}"; V
 Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" --scan ""%V"""; Tasks: contextmenu; Flags: uninsdeletekey
 
 [Run]
-; When autostart AND runasadmin are both selected: Register with Highest Privileges via Task Scheduler.
-; This bypasses the Windows logon UAC suppression block that drops standard Run registry keys.
-Filename: "{sys}\schtasks.exe"; Parameters: "/create /tn ""{#MyAppName}_ElevatedAutoStart"" /tr ""\""{app}\{#MyAppExeName}\"" --tray"" /sc onlogon /rl HIGHEST /f"; Tasks: autostart and startminimized and runasadmin; Flags: runhidden
-Filename: "{sys}\schtasks.exe"; Parameters: "/create /tn ""{#MyAppName}_ElevatedAutoStart"" /tr ""\""{app}\{#MyAppExeName}\"""" /sc onlogon /rl HIGHEST /f"; Tasks: autostart and not startminimized and runasadmin; Flags: runhidden
-Filename: "{sys}\schtasks.exe"; Parameters: "/delete /tn ""{#MyAppName}_ElevatedAutoStart"" /f"; Tasks: not runasadmin; Flags: runhidden
+; When autostart AND runasadmin are both selected: Register with Highest Privileges via Task Scheduler
+; bound explicitly to the active interactive desktop user (/ru) rather than an over-the-shoulder UAC admin account.
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""$u = (Get-CimInstance Win32_ComputerSystem).UserName; if ([string]::IsNullOrWhiteSpace($u)) {{ $u = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name }; $q = [char]34; $tr = [char]92 + $q + '{app}\{#MyAppExeName}' + [char]92 + $q + ' --tray'; $a = '/create /tn ' + $q + '{#MyAppName}_ElevatedAutoStart' + $q + ' /tr ' + $q + $tr + $q + ' /sc onlogon /ru ' + $q + $u + $q + ' /rl HIGHEST /it /f'; $p = New-Object System.Diagnostics.ProcessStartInfo('{sys}\schtasks.exe', $a); $p.UseShellExecute = $false; $p.CreateNoWindow = $true; [System.Diagnostics.Process]::Start($p).WaitForExit()"""; Tasks: autostart and startminimized and runasadmin; Flags: runhidden
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ""$u = (Get-CimInstance Win32_ComputerSystem).UserName; if ([string]::IsNullOrWhiteSpace($u)) {{ $u = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name }; $q = [char]34; $tr = [char]92 + $q + '{app}\{#MyAppExeName}' + [char]92 + $q; $a = '/create /tn ' + $q + '{#MyAppName}_ElevatedAutoStart' + $q + ' /tr ' + $q + $tr + $q + ' /sc onlogon /ru ' + $q + $u + $q + ' /rl HIGHEST /it /f'; $p = New-Object System.Diagnostics.ProcessStartInfo('{sys}\schtasks.exe', $a); $p.UseShellExecute = $false; $p.CreateNoWindow = $true; [System.Diagnostics.Process]::Start($p).WaitForExit()"""; Tasks: autostart and not startminimized and runasadmin; Flags: runhidden
+Filename: "{sys}\schtasks.exe"; Parameters: "/delete /tn ""{#MyAppName}_ElevatedAutoStart"" /f"; Tasks: not autostart or not runasadmin; Flags: runhidden
 
 ; Post-install application launch
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec

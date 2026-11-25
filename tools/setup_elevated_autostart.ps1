@@ -3,10 +3,14 @@
 
 param(
     [string]$TargetExe = "C:\Program Files\FileOrgy\FileOrgy.exe",
-    [string]$WorkspaceDir = "C:\Users\swalih\FileOrgy"
+    [string]$WorkspaceDir = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($WorkspaceDir)) {
+    $WorkspaceDir = Split-Path -Path $PSScriptRoot -Parent
+}
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "=== Configuring FileOrgy Elevated Autostart & Tracker ===" -ForegroundColor Cyan
@@ -39,7 +43,10 @@ try {
 Write-Host "`n[2/4] Registering Task Scheduler entry: 'FileOrgy_ElevatedAutoStart'..." -ForegroundColor Yellow
 
 $taskName = "FileOrgy_ElevatedAutoStart"
-$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+$currentUser = (Get-CimInstance Win32_ComputerSystem).UserName
+if ([string]::IsNullOrWhiteSpace($currentUser)) {
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+}
 Write-Host "  Target User : $currentUser" -ForegroundColor Gray
 Write-Host "  Executable  : $TargetExe --tray" -ForegroundColor Gray
 

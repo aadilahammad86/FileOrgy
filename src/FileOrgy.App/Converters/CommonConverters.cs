@@ -3,7 +3,11 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using FileOrgy.App.Services;
 using FileOrgy.Core.Models;
+using WpfApp = System.Windows.Application;
+using WpfBrush = System.Windows.Media.Brush;
+using WpfColor = System.Windows.Media.Color;
 
 namespace FileOrgy.App.Converters
 {
@@ -50,14 +54,17 @@ namespace FileOrgy.App.Converters
                 },
                 StepType step => step switch
                 {
-                    StepType.MoveFile => "📁 Move File to Folder",
-                    StepType.CopyFile => "📋 Copy File to Folder",
-                    StepType.SmartRename => "✏️ Smart Rename File",
-                    StepType.ExtractArchive => "📦 Extract Archive (.zip, .rar, etc.)",
-                    StepType.ExtractDate => "📅 Extract Document Date",
-                    StepType.RegexCapture => "🔍 Capture Variables via Regex",
-                    StepType.CleanupFolder => "🧹 Clean Up Old Files",
-                    StepType.RunCommand => "⚙️ Run External Script / Command",
+                    StepType.InspectDocument => "Inspect Document Content",
+                    StepType.ExtractDate => "Extract Document Date",
+                    StepType.RegexCapture => "Capture Variables via Regex",
+                    StepType.SmartRename => "Smart Rename File",
+                    StepType.MoveFile => "Move File to Folder",
+                    StepType.CopyFile => "Copy File to Folder",
+                    StepType.ExtractArchive => "Extract Archive (.zip, .rar, .7z)",
+                    StepType.RecycleFile => "Send File to Recycle Bin",
+                    StepType.PermanentDelete => "Permanently Delete File",
+                    StepType.CleanupFolder => "Clean Up Old Files",
+                    StepType.RunCommand => "Run External Script / Command",
                     _ => step.ToString()
                 },
                 ConflictResolution res => res switch
@@ -74,6 +81,8 @@ namespace FileOrgy.App.Converters
                     CaseTransform.LowerCase => "lowercase (all small letters)",
                     CaseTransform.UpperCase => "UPPERCASE (ALL CAPITAL LETTERS)",
                     CaseTransform.TitleCase => "Title Case (Capitalize Each Word)",
+                    CaseTransform.SnakeCase => "snake_case (underscore separated)",
+                    CaseTransform.KebabCase => "kebab-case (hyphen separated)",
                     _ => ct.ToString()
                 },
                 ArchiveExtractDestination dest => dest switch
@@ -90,6 +99,14 @@ namespace FileOrgy.App.Converters
                     ArchivePostAction.DeleteArchivePermanently => "Permanently delete archive file",
                     ArchivePostAction.MoveArchiveToFolder => "Move original archive to folder",
                     _ => act.ToString()
+                },
+                StartupMode mode => mode switch
+                {
+                    StartupMode.Disabled => "Disabled",
+                    StartupMode.RegistryCurrentUser => "Standard User Startup (HKCU Run)",
+                    StartupMode.TaskSchedulerElevated => "Elevated Task Scheduler",
+                    StartupMode.BlockedOrForeignTask => "Blocked or Foreign Task",
+                    _ => mode.ToString()
                 },
                 _ => value.ToString() ?? string.Empty
             };
@@ -123,18 +140,116 @@ namespace FileOrgy.App.Converters
         }
     }
 
-    public class BoolToStatusBrushConverter : IValueConverter
+    public class InverseBoolConverter : IValueConverter
     {
-        private static readonly SolidColorBrush GreenBrush = new(System.Windows.Media.Color.FromRgb(16, 185, 129)); // #10B981
-        private static readonly SolidColorBrush AmberBrush = new(System.Windows.Media.Color.FromRgb(245, 158, 11)); // #F59E0B
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b ? !b : true;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b ? !b : false;
+        }
+    }
+
+    public class NullToVisibilityConverter : IValueConverter
+    {
+        public bool Invert { get; set; }
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool b)
+            bool isNotNull = value != null;
+            if (Invert) isNotNull = !isNotNull;
+            return isNotNull ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StringNotEmptyToVisibilityConverter : IValueConverter
+    {
+        public bool Invert { get; set; }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool hasText = value is string s && !string.IsNullOrWhiteSpace(s);
+            if (Invert) hasText = !hasText;
+            return hasText ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class CountToVisibilityConverter : IValueConverter
+    {
+        public bool ShowWhenZero { get; set; }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            int count = 0;
+            if (value is int i) count = i;
+            else if (value is long l) count = (int)Math.Min(int.MaxValue, l);
+
+            bool visible = ShowWhenZero ? count == 0 : count > 0;
+            return visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToStatusBrushConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush GreenBrush = new(WpfColor.FromRgb(34, 197, 94));
+        private static readonly SolidColorBrush AmberBrush = new(WpfColor.FromRgb(245, 158, 11));
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b && b)
             {
-                return b ? GreenBrush : AmberBrush;
+                return WpfApp.Current?.TryFindResource("Brush.Success") as WpfBrush ?? GreenBrush;
             }
-            return AmberBrush;
+            return WpfApp.Current?.TryFindResource("Brush.Warning") as WpfBrush ?? AmberBrush;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StepTypeToIconKeyConverter : IValueConverter
+    {
+        public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not StepType step) return null;
+
+            string key = step switch
+            {
+                StepType.InspectDocument => "Icon.FileText",
+                StepType.ExtractDate => "Icon.Calendar",
+                StepType.RegexCapture => "Icon.Search",
+                StepType.SmartRename => "Icon.Edit",
+                StepType.MoveFile => "Icon.Folder",
+                StepType.CopyFile => "Icon.Copy",
+                StepType.ExtractArchive => "Icon.Archive",
+                StepType.RecycleFile => "Icon.Trash",
+                StepType.PermanentDelete => "Icon.Error",
+                StepType.CleanupFolder => "Icon.Filter",
+                StepType.RunCommand => "Icon.Terminal",
+                _ => "Icon.Workflow"
+            };
+
+            return WpfApp.Current?.TryFindResource(key) as Geometry;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -145,14 +260,27 @@ namespace FileOrgy.App.Converters
 
     public class LogLevelToBrushConverter : IValueConverter
     {
-        private static readonly SolidColorBrush GreenBrush = new(System.Windows.Media.Color.FromRgb(16, 185, 129));
-        private static readonly SolidColorBrush RedBrush = new(System.Windows.Media.Color.FromRgb(239, 68, 68));
-        private static readonly SolidColorBrush YellowBrush = new(System.Windows.Media.Color.FromRgb(245, 158, 11));
-        private static readonly SolidColorBrush BlueBrush = new(System.Windows.Media.Color.FromRgb(59, 130, 246));
+        private static readonly SolidColorBrush GreenBrush = new(WpfColor.FromRgb(34, 197, 94));
+        private static readonly SolidColorBrush RedBrush = new(WpfColor.FromRgb(239, 68, 68));
+        private static readonly SolidColorBrush YellowBrush = new(WpfColor.FromRgb(245, 158, 11));
+        private static readonly SolidColorBrush BlueBrush = new(WpfColor.FromRgb(56, 189, 248));
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             string s = value?.ToString() ?? string.Empty;
+            string key = s switch
+            {
+                "Success" => "Brush.Success",
+                "Error" => "Brush.Danger",
+                "Warning" => "Brush.Warning",
+                _ => "Brush.Info"
+            };
+
+            if (WpfApp.Current?.TryFindResource(key) is WpfBrush themedBrush)
+            {
+                return themedBrush;
+            }
+
             return s switch
             {
                 "Success" => GreenBrush,
@@ -160,6 +288,124 @@ namespace FileOrgy.App.Converters
                 "Warning" => YellowBrush,
                 _ => BlueBrush
             };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class LogLevelToBackgroundConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush SuccessSubtle = new(WpfColor.FromRgb(18, 43, 30));
+        private static readonly SolidColorBrush DangerSubtle = new(WpfColor.FromRgb(46, 22, 25));
+        private static readonly SolidColorBrush WarningSubtle = new(WpfColor.FromRgb(45, 34, 17));
+        private static readonly SolidColorBrush InfoSubtle = new(WpfColor.FromRgb(19, 38, 56));
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string s = value?.ToString() ?? string.Empty;
+            string key = s switch
+            {
+                "Success" => "Brush.SuccessSubtle",
+                "Error" => "Brush.DangerSubtle",
+                "Warning" => "Brush.WarningSubtle",
+                _ => "Brush.InfoSubtle"
+            };
+
+            if (WpfApp.Current?.TryFindResource(key) is WpfBrush themedBrush)
+            {
+                return themedBrush;
+            }
+
+            return s switch
+            {
+                "Success" => SuccessSubtle,
+                "Error" => DangerSubtle,
+                "Warning" => WarningSubtle,
+                _ => InfoSubtle
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class LogLevelToForegroundConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush SuccessText = new(WpfColor.FromRgb(74, 222, 128));
+        private static readonly SolidColorBrush DangerText = new(WpfColor.FromRgb(248, 113, 113));
+        private static readonly SolidColorBrush WarningText = new(WpfColor.FromRgb(251, 191, 36));
+        private static readonly SolidColorBrush InfoText = new(WpfColor.FromRgb(125, 211, 252));
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string s = value?.ToString() ?? string.Empty;
+            string key = s switch
+            {
+                "Success" => "Brush.SuccessText",
+                "Error" => "Brush.DangerText",
+                "Warning" => "Brush.WarningText",
+                _ => "Brush.InfoText"
+            };
+
+            if (WpfApp.Current?.TryFindResource(key) is WpfBrush themedBrush)
+            {
+                return themedBrush;
+            }
+
+            return s switch
+            {
+                "Success" => SuccessText,
+                "Error" => DangerText,
+                "Warning" => WarningText,
+                _ => InfoText
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class ToastSeverityToBrushConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush SuccessBrush = new(WpfColor.FromRgb(34, 197, 94));
+        private static readonly SolidColorBrush WarningBrush = new(WpfColor.FromRgb(245, 158, 11));
+        private static readonly SolidColorBrush DangerBrush = new(WpfColor.FromRgb(239, 68, 68));
+        private static readonly SolidColorBrush InfoBrush = new(WpfColor.FromRgb(56, 189, 248));
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is ToastSeverity severity)
+            {
+                string key = severity switch
+                {
+                    ToastSeverity.Success => "Brush.Success",
+                    ToastSeverity.Warning => "Brush.Warning",
+                    ToastSeverity.Error => "Brush.Danger",
+                    _ => "Brush.Info"
+                };
+
+                if (WpfApp.Current?.TryFindResource(key) is WpfBrush themedBrush)
+                {
+                    return themedBrush;
+                }
+
+                return severity switch
+                {
+                    ToastSeverity.Success => SuccessBrush,
+                    ToastSeverity.Warning => WarningBrush,
+                    ToastSeverity.Error => DangerBrush,
+                    _ => InfoBrush
+                };
+            }
+
+            return WpfApp.Current?.TryFindResource("Brush.Info") as WpfBrush ?? InfoBrush;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Windows;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using FileOrgy.App.Services;
 using FileOrgy.Core.Models;
 using FileOrgy.Core.Services;
 
@@ -75,7 +75,7 @@ namespace FileOrgy.App.ViewModels
         public int ConditionsCount => _rule.Conditions.Count;
         public int StepsCount => _rule.Steps.Count;
 
-        public string SummaryText => $"{ConditionsCount} conditions, {StepsCount} workflow steps";
+        public string SummaryText => $"{ConditionsCount} condition(s)  •  {StepsCount} workflow step(s)";
 
         public Rule Rule => _rule;
 
@@ -89,6 +89,8 @@ namespace FileOrgy.App.ViewModels
         {
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(Description));
+            OnPropertyChanged(nameof(Enabled));
+            OnPropertyChanged(nameof(Priority));
             OnPropertyChanged(nameof(ConditionsCount));
             OnPropertyChanged(nameof(StepsCount));
             OnPropertyChanged(nameof(SummaryText));
@@ -98,14 +100,61 @@ namespace FileOrgy.App.ViewModels
     public class RulesViewModel : ViewModelBase
     {
         private readonly FileOrgyOrchestrator _orchestrator;
+        private readonly NotificationService? _notifications;
         private RuleItemViewModel? _selectedRule;
+        private string _searchQuery = string.Empty;
 
         public ObservableCollection<RuleItemViewModel> Rules { get; } = new();
+        public ObservableCollection<RuleItemViewModel> FilteredRules { get; } = new();
+        public ObservableCollection<WorkflowStep> SelectedRulePipelinePreview { get; } = new();
+
+        public string SearchQuery
+        {
+            get => _searchQuery;
+            set
+            {
+                if (SetProperty(ref _searchQuery, value ?? string.Empty))
+                {
+                    ApplyFilter();
+                }
+            }
+        }
 
         public RuleItemViewModel? SelectedRule
         {
             get => _selectedRule;
-            set => SetProperty(ref _selectedRule, value);
+            set
+            {
+                if (SetProperty(ref _selectedRule, value))
+                {
+                    RefreshSelectedRuleInspector();
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+
+        public string SelectedRuleFolderScopeSummary
+        {
+            get
+            {
+                if (SelectedRule == null) return string.Empty;
+                var scopedIds = SelectedRule.Rule.ScopedFolderIds;
+                if (scopedIds == null || scopedIds.Count == 0)
+                {
+                    return "Applies to all monitored folders";
+                }
+
+                var folders = _orchestrator.ConfigService.CurrentConfig.WatchFolders;
+                var names = scopedIds
+                    .Select(id => folders.FirstOrDefault(f => f.Id == id))
+                    .Where(f => f != null)
+                    .Select(f => string.IsNullOrWhiteSpace(f!.DisplayName) ? f.FolderPath : f.DisplayName)
+                    .ToList();
+
+                return names.Count == 0
+                    ? "Scoped folder(s) no longer exist"
+                    : $"Scoped to: {string.Join(", ", names)}";
+            }
         }
 
         public ICommand AddRuleCommand { get; }
@@ -117,23 +166,90 @@ namespace FileOrgy.App.ViewModels
         public ICommand LoadInPlacePresetsCommand { get; }
 
         public event Action<Rule>? RequestEditRule;
+        public event Action? RulesChanged;
 
-        public RulesViewModel(FileOrgyOrchestrator orchestrator)
+        public RulesViewModel(FileOrgyOrchestrator orchestrator, NotificationService? notifications = null)
         {
-            _orchestrator = orchestrator;
+            _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
+            _notifications = notifications;
 
             AddRuleCommand = new RelayCommand(AddRule);
             EditRuleCommand = new RelayCommand(EditRule, () => SelectedRule != null);
-            RemoveRuleCommand = new RelayCommand(RemoveRule, () => SelectedRule != null);
+            RemoveRuleCommand = new RelayCommand(async () => await RemoveRuleAsync(), () => SelectedRule != null);
             DuplicateRuleCommand = new RelayCommand(DuplicateRule, () => SelectedRule != null);
             MoveUpCommand = new RelayCommand(MoveUp, () => SelectedRule != null && Rules.IndexOf(SelectedRule) > 0);
             MoveDownCommand = new RelayCommand(MoveDown, () => SelectedRule != null && Rules.IndexOf(SelectedRule) < Rules.Count - 1);
-            LoadInPlacePresetsCommand = new RelayCommand(LoadInPlacePresets);
+            LoadInPlacePresetsCommand = new RelayCommand(async () => await LoadInPlacePresetsAsync());
 
             LoadRules();
         }
 
-        private void LoadInPlacePresets()
+        public void LoadRules()
+        {
+            string? previousSelectedId = SelectedRule?.Id;
+
+            Rules.Clear();
+            var sorted = _orchestrator.ConfigService.CurrentConfig.Rules.OrderBy(r => r.Priority).ToList();
+            foreach (var rule in sorted)
+            {
+                Rules.Add(new RuleItemViewModel(rule, SaveAndApply));
+            }
+
+            ApplyFilter();
+
+            SelectedRule = (!string.IsNullOrEmpty(previousSelectedId)
+                ? FilteredRules.FirstOrDefault(r => r.Id == previousSelectedId)
+                : null) ?? FilteredRules.FirstOrDefault() ?? Rules.FirstOrDefault();
+
+            RefreshSelectedRuleInspector();
+            RulesChanged?.Invoke();
+        }
+
+        public void ApplyFilter()
+        {
+            var previousId = SelectedRule?.Id;
+            FilteredRules.Clear();
+
+            string query = SearchQuery.Trim();
+            foreach (var item in Rules)
+            {
+                if (string.IsNullOrEmpty(query) ||
+                    item.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    item.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    FilteredRules.Add(item);
+                }
+            }
+
+            if (SelectedRule == null || !FilteredRules.Contains(SelectedRule))
+            {
+                SelectedRule = (!string.IsNullOrEmpty(previousId)
+                    ? FilteredRules.FirstOrDefault(r => r.Id == previousId)
+                    : null) ?? FilteredRules.FirstOrDefault();
+            }
+        }
+
+        public void NotifyRulesChanged()
+        {
+            SelectedRule?.NotifyUpdated();
+            RefreshSelectedRuleInspector();
+            RulesChanged?.Invoke();
+        }
+
+        private void RefreshSelectedRuleInspector()
+        {
+            SelectedRulePipelinePreview.Clear();
+            if (SelectedRule?.Rule.Steps != null)
+            {
+                foreach (var step in SelectedRule.Rule.Steps)
+                {
+                    SelectedRulePipelinePreview.Add(step);
+                }
+            }
+            OnPropertyChanged(nameof(SelectedRuleFolderScopeSummary));
+        }
+
+        private async Task LoadInPlacePresetsAsync()
         {
             var existingPresets = _orchestrator.ConfigService.CurrentConfig.Rules
                 .Where(r => r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase) ||
@@ -144,29 +260,29 @@ namespace FileOrgy.App.ViewModels
             bool overwrite = false;
             if (existingPresets.Count > 0)
             {
-                var promptResult = System.Windows.MessageBox.Show(
-                    $"In-place organizer rules are already present ({existingPresets.Count} detected).\n\nDo you want to reset them to default presets?",
-                    "Restore In-Place Presets",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (promptResult != MessageBoxResult.Yes)
+                if (_notifications != null)
                 {
-                    return;
+                    bool confirmed = await _notifications.ConfirmAsync(
+                        "Restore In-Place Presets",
+                        $"In-place organizer rules are already present ({existingPresets.Count} detected). Reset them to the 7 default presets?",
+                        confirmLabel: "Reset Presets",
+                        cancelLabel: "Cancel");
+
+                    if (!confirmed) return;
                 }
                 overwrite = true;
             }
             else
             {
-                var result = System.Windows.MessageBox.Show(
-                    "Load In-Place Organization Presets?\n\nThis will add rules to automatically sort files into Programs, Documents, Compressed, Pictures, Videos, Audio, and Others folders directly inside each monitored directory using dynamic in-place relocation.",
-                    "Load In-Place Presets",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result != MessageBoxResult.Yes)
+                if (_notifications != null)
                 {
-                    return;
+                    bool confirmed = await _notifications.ConfirmAsync(
+                        "Load In-Place Presets",
+                        "Add 7 In-Place Organization rules (Programs, Documents, Compressed, Pictures, Videos, Audio, Others) inside each monitored directory?",
+                        confirmLabel: "Load Presets",
+                        cancelLabel: "Cancel");
+
+                    if (!confirmed) return;
                 }
             }
 
@@ -175,30 +291,10 @@ namespace FileOrgy.App.ViewModels
             SelectedRule = Rules.FirstOrDefault(r => r.Id.StartsWith("rule-inplace-", StringComparison.OrdinalIgnoreCase) ||
                                                     r.Id.StartsWith("preset-inplace-", StringComparison.OrdinalIgnoreCase)) ?? Rules.FirstOrDefault();
 
-            System.Windows.MessageBox.Show(
-                "7 In-Place Organization Presets loaded successfully:\n\n" +
-                "• In-Place: Programs & Installers (.exe, .msi, .dmg)\n" +
-                "• In-Place: Documents & Tables (.pdf, .docx, .doc, .xlsx, .csv, .txt, etc.)\n" +
-                "• In-Place: Compressed Archives (.zip, .rar, .7z, .tar, .gz, etc.)\n" +
-                "• In-Place: Pictures & Graphics (.jpg, .jpeg, .png, .gif, .svg, etc.)\n" +
-                "• In-Place: Videos & Movies (.mp4, .mkv, .avi, .mov, etc.)\n" +
-                "• In-Place: Audio & Music (.mp3, .wav, .flac, .m4a, etc.)\n" +
-                "• In-Place: Other Files (Any unclassified file type not matching above filters)\n\n" +
-                "Target subfolders are organized in-place under each monitored directory.",
-                "Presets Loaded",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-
-        public void LoadRules()
-        {
-            Rules.Clear();
-            var sorted = _orchestrator.ConfigService.CurrentConfig.Rules.OrderBy(r => r.Priority).ToList();
-            foreach (var rule in sorted)
-            {
-                Rules.Add(new RuleItemViewModel(rule, SaveAndApply));
-            }
-            SelectedRule = Rules.FirstOrDefault();
+            _notifications?.ShowToast(
+                "In-Place Presets Loaded",
+                "7 category rules are active for in-place organization inside monitored folders.",
+                ToastSeverity.Success);
         }
 
         private void AddRule()
@@ -218,6 +314,7 @@ namespace FileOrgy.App.ViewModels
             _orchestrator.ConfigService.CurrentConfig.Rules.Add(newRule);
             var vm = new RuleItemViewModel(newRule, SaveAndApply);
             Rules.Add(vm);
+            ApplyFilter();
             SelectedRule = vm;
             SaveAndApply();
 
@@ -261,44 +358,66 @@ namespace FileOrgy.App.ViewModels
                     Name = s.Name,
                     Enabled = s.Enabled,
                     ContinueOnError = s.ContinueOnError,
-                    RenamePattern = s.RenamePattern,
                     DestinationTemplate = s.DestinationTemplate,
+                    RenamePattern = s.RenamePattern,
+                    CaseTransform = s.CaseTransform,
                     ConflictResolution = s.ConflictResolution,
                     ExtractDestination = s.ExtractDestination,
+                    CustomExtractPath = s.CustomExtractPath,
                     ArchivePostAction = s.ArchivePostAction,
+                    ArchiveMoveTargetFolder = s.ArchiveMoveTargetFolder,
+                    EnqueueExtractedFiles = s.EnqueueExtractedFiles,
                     RegexPattern = s.RegexPattern,
                     RegexSource = s.RegexSource,
                     OlderThanDays = s.OlderThanDays,
                     RemoveEmptyFolders = s.RemoveEmptyFolders,
-                    SafeRecycle = s.SafeRecycle
+                    SafeRecycle = s.SafeRecycle,
+                    CommandExecutable = s.CommandExecutable,
+                    CommandArguments = s.CommandArguments
                 }).ToList()
             };
 
             _orchestrator.ConfigService.CurrentConfig.Rules.Add(copy);
             var vm = new RuleItemViewModel(copy, SaveAndApply);
             Rules.Add(vm);
+            ApplyFilter();
             SelectedRule = vm;
             SaveAndApply();
+
+            _notifications?.ShowToast(
+                "Rule Duplicated",
+                $"Created '{copy.Name}'.",
+                ToastSeverity.Success);
         }
 
-        private void RemoveRule()
+        private async Task RemoveRuleAsync()
         {
             if (SelectedRule == null) return;
+            var target = SelectedRule;
 
-            var res = System.Windows.MessageBox.Show(
-                $"Delete rule '{SelectedRule.Name}'?",
-                "Delete Rule",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (res == MessageBoxResult.Yes)
+            if (_notifications != null)
             {
-                _orchestrator.ConfigService.CurrentConfig.Rules.Remove(SelectedRule.Rule);
-                Rules.Remove(SelectedRule);
-                SelectedRule = Rules.FirstOrDefault();
-                ReindexPriorities();
-                SaveAndApply();
+                bool confirmed = await _notifications.ConfirmAsync(
+                    "Delete Automation Rule",
+                    $"Delete rule '{target.Name}'? This cannot be undone.",
+                    confirmLabel: "Delete Rule",
+                    cancelLabel: "Cancel",
+                    isDestructive: true);
+
+                if (!confirmed) return;
             }
+
+            _orchestrator.ConfigService.CurrentConfig.Rules.Remove(target.Rule);
+            Rules.Remove(target);
+            ReindexPriorities();
+            ApplyFilter();
+            SelectedRule = FilteredRules.FirstOrDefault() ?? Rules.FirstOrDefault();
+            SaveAndApply();
+
+            _notifications?.ShowToast(
+                "Rule Deleted",
+                $"Removed '{target.Name}'.",
+                ToastSeverity.Info);
         }
 
         private void MoveUp()
@@ -310,8 +429,9 @@ namespace FileOrgy.App.ViewModels
                 var item = SelectedRule;
                 Rules.RemoveAt(idx);
                 Rules.Insert(idx - 1, item);
-                SelectedRule = item;
                 ReindexPriorities();
+                ApplyFilter();
+                SelectedRule = item;
                 SaveAndApply();
             }
         }
@@ -325,8 +445,9 @@ namespace FileOrgy.App.ViewModels
                 var item = SelectedRule;
                 Rules.RemoveAt(idx);
                 Rules.Insert(idx + 1, item);
-                SelectedRule = item;
                 ReindexPriorities();
+                ApplyFilter();
+                SelectedRule = item;
                 SaveAndApply();
             }
         }
@@ -342,6 +463,7 @@ namespace FileOrgy.App.ViewModels
         public void SaveAndApply()
         {
             _orchestrator.ConfigService.SaveConfig(_orchestrator.ConfigService.CurrentConfig);
+            NotifyRulesChanged();
         }
     }
 }

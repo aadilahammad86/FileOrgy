@@ -217,6 +217,7 @@ namespace FileOrgy.Core.Models
         public int LogRetentionDays { get; set; } = 30;
         public bool DarkMode { get; set; } = true;
         public bool AutoCheckForUpdates { get; set; } = true;
+        public bool HasCompletedOnboarding { get; set; } = false;
     }
 
     public class AppConfiguration

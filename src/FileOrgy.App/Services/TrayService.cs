@@ -45,7 +45,7 @@ namespace FileOrgy.App.Services
             _pauseMenuItem = new ToolStripMenuItem("Pause Monitoring", null, (s, e) => TogglePause());
             contextMenu.Items.Add(_pauseMenuItem);
 
-            var scanMonitoredItem = new ToolStripMenuItem("⚡ Scan Monitored Folders", null, (s, e) => ScanMonitoredRequested?.Invoke());
+            var scanMonitoredItem = new ToolStripMenuItem("Scan Monitored Folders", null, (s, e) => ScanMonitoredRequested?.Invoke());
             contextMenu.Items.Add(scanMonitoredItem);
 
             var scanItem = new ToolStripMenuItem("Scan Custom Folder...", null, (s, e) => ScanRequested?.Invoke());
@@ -92,8 +92,8 @@ namespace FileOrgy.App.Services
 
             using (var brush = new LinearGradientBrush(
                 new Rectangle(2, 6, 28, 22),
-                DColor.FromArgb(99, 102, 241),
-                DColor.FromArgb(168, 85, 247),
+                DColor.FromArgb(20, 184, 166),
+                DColor.FromArgb(15, 118, 110),
                 LinearGradientMode.ForwardDiagonal))
             {
                 g.FillPolygon(brush, new DPoint[]
@@ -107,7 +107,7 @@ namespace FileOrgy.App.Services
                 g.FillRoundedRectangle(brush, 2, 11, 28, 17, 4);
             }
 
-            using (var boltBrush = new SolidBrush(DColor.FromArgb(254, 240, 138)))
+            using (var boltBrush = new SolidBrush(DColor.FromArgb(253, 224, 71)))
             {
                 var boltPoints = new DPoint[]
                 {

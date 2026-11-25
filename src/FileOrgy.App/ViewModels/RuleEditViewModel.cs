@@ -6,9 +6,43 @@ using System.Linq;
 using System.Windows.Input;
 using FileOrgy.Core.Models;
 using FileOrgy.Core.Services;
+using FileOrgy.Core.Utils;
+using Forms = System.Windows.Forms;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace FileOrgy.App.ViewModels
 {
+    public class FolderScopeChoiceViewModel : ViewModelBase
+    {
+        private bool _isSelected;
+        private readonly Action _onChanged;
+
+        public string Id { get; }
+        public string DisplayName { get; }
+        public string FolderPath { get; }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (SetProperty(ref _isSelected, value))
+                {
+                    _onChanged();
+                }
+            }
+        }
+
+        public FolderScopeChoiceViewModel(string id, string displayName, string folderPath, bool isSelected, Action onChanged)
+        {
+            Id = id;
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? Path.GetFileName(folderPath) : displayName;
+            FolderPath = folderPath;
+            _isSelected = isSelected;
+            _onChanged = onChanged;
+        }
+    }
+
     public class RuleConditionItemViewModel : ViewModelBase
     {
         private readonly RuleCondition _condition;
@@ -44,6 +78,20 @@ namespace FileOrgy.App.ViewModels
                 if (_condition.Target != value)
                 {
                     _condition.Target = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsCustomVariableVisible));
+                }
+            }
+        }
+
+        public string? TargetVariable
+        {
+            get => _condition.TargetVariable;
+            set
+            {
+                if (_condition.TargetVariable != value)
+                {
+                    _condition.TargetVariable = value;
                     OnPropertyChanged();
                 }
             }
@@ -91,7 +139,7 @@ namespace FileOrgy.App.ViewModels
             set
             {
                 var val = value ?? string.Empty;
-                if (_condition.Value != val || _condition.KeywordListName != val)
+                if (_condition.Value != val || (IsKeywordListVisible && _condition.KeywordListName != val))
                 {
                     _condition.Value = val;
                     if (IsKeywordListVisible)
@@ -139,7 +187,11 @@ namespace FileOrgy.App.ViewModels
         public bool IsKeywordListVisible =>
             Operator == ConditionOperator.InKeywordList || Operator == ConditionOperator.NotInKeywordList;
 
-        public bool IsValueVisible => !IsKeywordListVisible;
+        public bool IsValueVisible =>
+            !IsKeywordListVisible && Operator != ConditionOperator.IsEmptyFile;
+
+        public bool IsCustomVariableVisible =>
+            Target == RuleTarget.CustomVariable;
 
         public RuleCondition Model => _condition;
 
@@ -152,7 +204,6 @@ namespace FileOrgy.App.ViewModels
             _availableKeywordLists = availableKeywordLists ?? new List<string>();
             _keywordListsDict = keywordListsDict;
 
-            // Ensure KeywordListName and Value are synchronized for keyword list matching operators
             if (IsKeywordListVisible)
             {
                 if (string.IsNullOrEmpty(_condition.Value) && !string.IsNullOrEmpty(_condition.KeywordListName))
@@ -203,6 +254,11 @@ namespace FileOrgy.App.ViewModels
                     OnPropertyChanged(nameof(IsRegexVisible));
                     OnPropertyChanged(nameof(IsCleanupVisible));
                     OnPropertyChanged(nameof(IsCommandVisible));
+                    OnPropertyChanged(nameof(IsInspectVisible));
+                    OnPropertyChanged(nameof(IsRecycleOrDeleteVisible));
+                    OnPropertyChanged(nameof(IsCustomExtractPathVisible));
+                    OnPropertyChanged(nameof(IsArchiveMoveTargetVisible));
+                    OnPropertyChanged(nameof(LivePatternPreview));
                 }
             }
         }
@@ -220,6 +276,19 @@ namespace FileOrgy.App.ViewModels
             }
         }
 
+        public bool ContinueOnError
+        {
+            get => _step.ContinueOnError;
+            set
+            {
+                if (_step.ContinueOnError != value)
+                {
+                    _step.ContinueOnError = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public string RenamePattern
         {
             get => _step.RenamePattern;
@@ -227,8 +296,9 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.RenamePattern != value)
                 {
-                    _step.RenamePattern = value;
+                    _step.RenamePattern = value ?? string.Empty;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(LivePatternPreview));
                 }
             }
         }
@@ -240,8 +310,9 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.DestinationTemplate != value)
                 {
-                    _step.DestinationTemplate = value;
+                    _step.DestinationTemplate = value ?? string.Empty;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(LivePatternPreview));
                 }
             }
         }
@@ -268,6 +339,7 @@ namespace FileOrgy.App.ViewModels
                 {
                     _step.CaseTransform = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(LivePatternPreview));
                 }
             }
         }
@@ -281,6 +353,20 @@ namespace FileOrgy.App.ViewModels
                 {
                     _step.ExtractDestination = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsCustomExtractPathVisible));
+                }
+            }
+        }
+
+        public string CustomExtractPath
+        {
+            get => _step.CustomExtractPath;
+            set
+            {
+                if (_step.CustomExtractPath != value)
+                {
+                    _step.CustomExtractPath = value ?? string.Empty;
+                    OnPropertyChanged();
                 }
             }
         }
@@ -293,6 +379,20 @@ namespace FileOrgy.App.ViewModels
                 if (_step.ArchivePostAction != value)
                 {
                     _step.ArchivePostAction = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsArchiveMoveTargetVisible));
+                }
+            }
+        }
+
+        public string ArchiveMoveTargetFolder
+        {
+            get => _step.ArchiveMoveTargetFolder;
+            set
+            {
+                if (_step.ArchiveMoveTargetFolder != value)
+                {
+                    _step.ArchiveMoveTargetFolder = value ?? string.Empty;
                     OnPropertyChanged();
                 }
             }
@@ -318,7 +418,7 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.RegexPattern != value)
                 {
-                    _step.RegexPattern = value;
+                    _step.RegexPattern = value ?? string.Empty;
                     OnPropertyChanged();
                 }
             }
@@ -331,7 +431,7 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.RegexSource != value)
                 {
-                    _step.RegexSource = value;
+                    _step.RegexSource = value ?? string.Empty;
                     OnPropertyChanged();
                 }
             }
@@ -342,9 +442,10 @@ namespace FileOrgy.App.ViewModels
             get => _step.OlderThanDays;
             set
             {
-                if (_step.OlderThanDays != value)
+                int clamped = Math.Max(0, value);
+                if (_step.OlderThanDays != clamped)
                 {
-                    _step.OlderThanDays = value;
+                    _step.OlderThanDays = clamped;
                     OnPropertyChanged();
                 }
             }
@@ -383,7 +484,7 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.CommandExecutable != value)
                 {
-                    _step.CommandExecutable = value;
+                    _step.CommandExecutable = value ?? string.Empty;
                     OnPropertyChanged();
                 }
             }
@@ -396,7 +497,7 @@ namespace FileOrgy.App.ViewModels
             {
                 if (_step.CommandArguments != value)
                 {
-                    _step.CommandArguments = value;
+                    _step.CommandArguments = value ?? string.Empty;
                     OnPropertyChanged();
                 }
             }
@@ -408,14 +509,67 @@ namespace FileOrgy.App.ViewModels
         public bool IsRegexVisible => StepType == StepType.RegexCapture;
         public bool IsCleanupVisible => StepType == StepType.CleanupFolder;
         public bool IsCommandVisible => StepType == StepType.RunCommand;
+        public bool IsInspectVisible => StepType == StepType.InspectDocument;
+        public bool IsRecycleOrDeleteVisible => StepType == StepType.RecycleFile || StepType == StepType.PermanentDelete;
+        public bool IsCustomExtractPathVisible => IsArchiveVisible && ExtractDestination == ArchiveExtractDestination.CustomFolder;
+        public bool IsArchiveMoveTargetVisible => IsArchiveVisible && ArchivePostAction == ArchivePostAction.MoveArchiveToFolder;
+
+        public string LivePatternPreview
+        {
+            get
+            {
+                try
+                {
+                    string sampleDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                    string samplePath = Path.Combine(sampleDir, "invoice_2026_sample.pdf");
+                    var sampleContext = new WorkflowContext(samplePath)
+                    {
+                        ExtractedDate = DateTime.Today
+                    };
+
+                    if (IsRenameVisible)
+                    {
+                        string evaluated = SmartRenamer.EvaluateTemplate(RenamePattern, sampleContext);
+                        evaluated = SmartRenamer.ApplyCaseTransform(evaluated, CaseTransform);
+                        evaluated = PathHelper.SanitizeFileName(evaluated);
+                        if (!Path.HasExtension(evaluated))
+                        {
+                            evaluated += ".pdf";
+                        }
+                        return evaluated;
+                    }
+
+                    if (IsMoveOrCopyVisible)
+                    {
+                        if (string.IsNullOrWhiteSpace(DestinationTemplate))
+                        {
+                            return "(enter destination path template)";
+                        }
+                        string dest = SmartRenamer.EvaluateTemplate(DestinationTemplate, sampleContext);
+                        return Path.Combine(dest, "invoice_2026_sample.pdf");
+                    }
+                }
+                catch
+                {
+                    return "(invalid template)";
+                }
+
+                return string.Empty;
+            }
+        }
 
         public WorkflowStep Model => _step;
 
         public ICommand AppendTokenCommand { get; }
+        public ICommand BrowseDestinationCommand { get; }
+        public ICommand BrowseCustomExtractPathCommand { get; }
+        public ICommand BrowseArchiveMoveTargetCommand { get; }
+        public ICommand BrowseCommandExecutableCommand { get; }
 
         public WorkflowStepItemViewModel(WorkflowStep step)
         {
             _step = step;
+
             AppendTokenCommand = new RelayCommand(param =>
             {
                 if (param is string token && !string.IsNullOrEmpty(token))
@@ -433,6 +587,62 @@ namespace FileOrgy.App.ViewModels
                     }
                 }
             });
+
+            BrowseDestinationCommand = new RelayCommand(() =>
+            {
+                string? picked = BrowseFolder("Select Destination Folder", DestinationTemplate);
+                if (!string.IsNullOrWhiteSpace(picked))
+                {
+                    DestinationTemplate = picked;
+                }
+            });
+
+            BrowseCustomExtractPathCommand = new RelayCommand(() =>
+            {
+                string? picked = BrowseFolder("Select Custom Extraction Folder", CustomExtractPath);
+                if (!string.IsNullOrWhiteSpace(picked))
+                {
+                    CustomExtractPath = picked;
+                }
+            });
+
+            BrowseArchiveMoveTargetCommand = new RelayCommand(() =>
+            {
+                string? picked = BrowseFolder("Select Archive Post-Move Folder", ArchiveMoveTargetFolder);
+                if (!string.IsNullOrWhiteSpace(picked))
+                {
+                    ArchiveMoveTargetFolder = picked;
+                }
+            });
+
+            BrowseCommandExecutableCommand = new RelayCommand(() =>
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Title = "Select Executable or Script",
+                    Filter = "Executables & Scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All Files (*.*)|*.*",
+                    CheckFileExists = true
+                };
+
+                if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FileName))
+                {
+                    CommandExecutable = dialog.FileName;
+                }
+            });
+        }
+
+        private static string? BrowseFolder(string description, string currentPath)
+        {
+            using var dialog = new Forms.FolderBrowserDialog
+            {
+                Description = description,
+                UseDescriptionForTitle = true,
+                SelectedPath = Directory.Exists(currentPath) ? currentPath : string.Empty
+            };
+
+            return dialog.ShowDialog() == Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath)
+                ? dialog.SelectedPath
+                : null;
         }
     }
 
@@ -535,6 +745,19 @@ namespace FileOrgy.App.ViewModels
             set { if (value) MatchLogic = ConditionMatchLogic.Any; }
         }
 
+        public ObservableCollection<FolderScopeChoiceViewModel> FolderScopeChoices { get; } = new();
+        public bool IsScopedToAllFolders => FolderScopeChoices.All(c => !c.IsSelected);
+        public string FolderScopeSummary
+        {
+            get
+            {
+                var selected = FolderScopeChoices.Where(c => c.IsSelected).Select(c => c.DisplayName).ToList();
+                return selected.Count == 0
+                    ? "All monitored folders"
+                    : $"Scoped to: {string.Join(", ", selected)}";
+            }
+        }
+
         public ObservableCollection<RuleConditionItemViewModel> Conditions { get; } = new();
         public ObservableCollection<WorkflowStepItemViewModel> Steps { get; } = new();
         public List<string> AvailableKeywordLists => _configService?.CurrentConfig?.KeywordLists?.Keys?.OrderBy(k => k).ToList() ?? new List<string>();
@@ -557,8 +780,10 @@ namespace FileOrgy.App.ViewModels
         public ICommand RemoveStepCommand { get; }
         public ICommand MoveStepUpCommand { get; }
         public ICommand MoveStepDownCommand { get; }
+        public ICommand ClearFolderScopeCommand { get; }
 
         public Rule Rule => _rule;
+        public AppConfiguration ConfigSnapshot => _configService?.CurrentConfig ?? new AppConfiguration();
 
         public RuleEditViewModel(Rule rule, ConfigService configService)
         {
@@ -566,6 +791,14 @@ namespace FileOrgy.App.ViewModels
             _configService = configService;
 
             var keywordDict = _configService?.CurrentConfig?.KeywordLists;
+            var watchFolders = _configService?.CurrentConfig?.WatchFolders ?? new List<WatchFolderConfig>();
+            var scopedIds = _rule.ScopedFolderIds ?? new List<string>();
+
+            foreach (var wf in watchFolders)
+            {
+                bool isSelected = scopedIds.Contains(wf.Id);
+                FolderScopeChoices.Add(new FolderScopeChoiceViewModel(wf.Id, wf.DisplayName, wf.FolderPath, isSelected, SyncScopedFolders));
+            }
 
             foreach (var cond in _rule.Conditions)
             {
@@ -585,6 +818,24 @@ namespace FileOrgy.App.ViewModels
             RemoveStepCommand = new RelayCommand(p => RemoveStep(p as WorkflowStepItemViewModel));
             MoveStepUpCommand = new RelayCommand(MoveStepUp, () => SelectedStep != null && Steps.IndexOf(SelectedStep) > 0);
             MoveStepDownCommand = new RelayCommand(MoveStepDown, () => SelectedStep != null && Steps.IndexOf(SelectedStep) < Steps.Count - 1);
+            ClearFolderScopeCommand = new RelayCommand(() =>
+            {
+                foreach (var choice in FolderScopeChoices)
+                {
+                    choice.IsSelected = false;
+                }
+                SyncScopedFolders();
+            });
+        }
+
+        private void SyncScopedFolders()
+        {
+            _rule.ScopedFolderIds = FolderScopeChoices
+                .Where(c => c.IsSelected)
+                .Select(c => c.Id)
+                .ToList();
+            OnPropertyChanged(nameof(IsScopedToAllFolders));
+            OnPropertyChanged(nameof(FolderScopeSummary));
         }
 
         private void AddCondition()

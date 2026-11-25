@@ -1,0 +1,891 @@
+<UserControl x:Class="FileOrgy.App.Views.OverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:FileOrgy.App.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="820" d:DesignWidth="1040"
+             AutomationProperties.AutomationId="OverviewView"
+             AutomationProperties.Name="Overview Workspace">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:BoolToVisibilityConverter x:Key="InverseBoolToVis" Invert="True"/>
+        <converters:CountToVisibilityConverter x:Key="ZeroCountToVis" ShowWhenZero="True"/>
+        <converters:CountToVisibilityConverter x:Key="NonZeroCountToVis" ShowWhenZero="False"/>
+        <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVis"/>
+        <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrush"/>
+        <converters:StepTypeToIconKeyConverter x:Key="StepTypeToIconKey"/>
+        <converters:LogLevelToBackgroundConverter x:Key="LogLevelToBg"/>
+        <converters:LogLevelToForegroundConverter x:Key="LogLevelToFg"/>
+
+        <Style x:Key="DataGridCellTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+        </Style>
+
+        <Style x:Key="SimulatorExecuteButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource PrimaryButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding PipelinePreviewVM.WouldDeleteOrRecycle}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brush.DangerSubtle}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Brush.DangerText}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  Padding="24,20,24,24">
+        <StackPanel>
+
+            <!-- 1. FIRST-RUN QUICK-START ONBOARDING BANNER -->
+            <Border Visibility="{Binding ShowQuickStartOnboarding, Converter={StaticResource BoolToVis}}"
+                    Background="{DynamicResource Brush.AccentSubtle}"
+                    BorderBrush="{DynamicResource Brush.AccentBorder}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.Lg}"
+                    Padding="20"
+                    Margin="0,0,0,20"
+                    AutomationProperties.AutomationId="OnboardingBanner"
+                    AutomationProperties.Name="First-Run Quick-Start Banner">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            Width="42" Height="42"
+                            CornerRadius="{StaticResource Radius.Md}"
+                            Background="{DynamicResource Brush.Accent}"
+                            VerticalAlignment="Top"
+                            Margin="0,0,16,0">
+                        <Path Data="{StaticResource Icon.LogoFolderBolt}"
+                              Fill="{DynamicResource Brush.TextOnAccent}"
+                              Width="22" Height="22"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Set up real-time folder automation in one click"
+                                   Style="{StaticResource Text.SectionTitle}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"/>
+                        <TextBlock Text="FileOrgy monitors your chosen folders in the background and executes multi-step automation rules — smart renaming, date extraction, archive extraction, and safe category sorting."
+                                   Style="{StaticResource Text.Secondary}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource GhostButtonStyle}"
+                                Command="{Binding DismissOnboardingCommand}"
+                                Content="Dismiss"
+                                Margin="0,0,8,0"
+                                AutomationProperties.AutomationId="DismissOnboardingButton"
+                                AutomationProperties.Name="Dismiss quick-start banner"/>
+                        <Button Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding QuickSetupDefaultsCommand}"
+                                AutomationProperties.AutomationId="QuickSetupDefaultsButton"
+                                AutomationProperties.Name="Quick Setup Downloads plus 7 Presets">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource Icon.Check}"
+                                      Fill="{DynamicResource Brush.TextOnAccent}"
+                                      Width="13" Height="13"
+                                      Stretch="Uniform"
+                                      Margin="0,0,8,0"
+                                      VerticalAlignment="Center"/>
+                                <TextBlock Text="Quick Setup (Downloads + 7 Presets)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. TELEMETRY KPI STRIP -->
+            <Grid Margin="0,0,0,20"
+                  AutomationProperties.AutomationId="TelemetryKpiStrip"
+                  AutomationProperties.Name="Telemetry KPI Summary">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- KPI 1: Files Processed -->
+                <Border Grid.Column="0"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="18,16"
+                        AutomationProperties.AutomationId="KpiFilesProcessedCard">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock Text="Files Processed" Style="{StaticResource Text.Caption}"/>
+                            <Path Data="{StaticResource Icon.Check}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Text="{Binding DashboardVM.TotalFilesProcessed}"
+                                   Style="{StaticResource Text.KpiValue}"
+                                   Foreground="{DynamicResource Brush.AccentText}"/>
+                        <TextBlock Text="Processed since launch"
+                                   Style="{StaticResource Text.Muted}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 2: Actions Today -->
+                <Border Grid.Column="2"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="18,16"
+                        AutomationProperties.AutomationId="KpiActionsTodayCard">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock Text="Actions Today" Style="{StaticResource Text.Caption}"/>
+                            <Path Data="{StaticResource Icon.History}"
+                                  Fill="{DynamicResource Brush.InfoText}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Text="{Binding DashboardVM.OperationsToday}"
+                                   Style="{StaticResource Text.KpiValue}"
+                                   Foreground="{DynamicResource Brush.InfoText}"/>
+                        <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0">
+                            <Run Text="{Binding DashboardVM.ErrorsTodayCount, Mode=OneWay}"/>
+                            <Run Text=" error(s) today"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 3: Watched Folders -->
+                <Border Grid.Column="4"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="18,16"
+                        AutomationProperties.AutomationId="KpiWatchedFoldersCard">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock Text="Watched Folders" Style="{StaticResource Text.Caption}"/>
+                            <Path Data="{StaticResource Icon.Folder}"
+                                  Fill="{DynamicResource Brush.SuccessText}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Text.KpiValue}">
+                            <Run Text="{Binding DashboardVM.ActiveFoldersCount, Mode=OneWay}" Foreground="{DynamicResource Brush.SuccessText}"/>
+                            <Run Text=" / " Foreground="{DynamicResource Brush.TextMuted}" FontSize="18"/>
+                            <Run Text="{Binding DashboardVM.WatchedFoldersTotalCount, Mode=OneWay}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="18"/>
+                        </TextBlock>
+                        <TextBlock Text="Active / total configured"
+                                   Style="{StaticResource Text.Muted}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 4: Space / Cleanup Saved -->
+                <Border Grid.Column="6"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="18,16"
+                        AutomationProperties.AutomationId="KpiSpaceSavedCard">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock Text="Space / Cleanup Saved" Style="{StaticResource Text.Caption}"/>
+                            <Path Data="{StaticResource Icon.Workflow}"
+                                  Fill="{DynamicResource Brush.WarningText}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Right"/>
+                        </Grid>
+                        <TextBlock Text="{Binding DashboardVM.StorageSavedText}"
+                                   Style="{StaticResource Text.KpiValue}"
+                                   Foreground="{DynamicResource Brush.WarningText}"/>
+                        <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0">
+                            <Run Text="{Binding DashboardVM.ActiveRulesCount, Mode=OneWay}"/>
+                            <Run Text=" / "/>
+                            <Run Text="{Binding DashboardVM.TotalRulesCount, Mode=OneWay}"/>
+                            <Run Text=" active rules"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- 3. TWO-COLUMN OPERATIONAL WORKSPACE -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.25*"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT: Interactive Dry-Run Pipeline Simulator Card -->
+                <Border Grid.Column="0"
+                        Style="{StaticResource CardBorderStyle}"
+                        Padding="20"
+                        AllowDrop="True"
+                        DragEnter="OnSimulatorDragEnter"
+                        DragOver="OnSimulatorDragOver"
+                        DragLeave="OnSimulatorDragLeave"
+                        Drop="OnSimulatorDrop"
+                        AutomationProperties.AutomationId="PipelineSimulatorCard"
+                        AutomationProperties.Name="Interactive Dry-Run Pipeline Simulator">
+                    <StackPanel>
+                        <!-- Header -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Data="{StaticResource Icon.Workflow}"
+                                      Fill="{DynamicResource Brush.AccentText}"
+                                      Width="16" Height="16"
+                                      Stretch="Uniform"
+                                      Margin="0,0,10,0"
+                                      VerticalAlignment="Center"/>
+                                <TextBlock Text="Dry-Run Pipeline Simulator"
+                                           Style="{StaticResource Text.SectionTitle}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Style="{StaticResource BadgeBorderStyle}">
+                                <TextBlock Text="No disk changes"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Brush.AccentText}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Dropzone Banner -->
+                        <Border x:Name="DropZoneBorder"
+                                Style="{StaticResource WellBorderStyle}"
+                                Padding="14,12"
+                                Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="32" Height="32"
+                                        CornerRadius="{StaticResource Radius.Md}"
+                                        Background="{DynamicResource Brush.AccentSubtle}"
+                                        BorderBrush="{DynamicResource Brush.AccentBorder}"
+                                        BorderThickness="1"
+                                        Margin="0,0,12,0">
+                                    <Path Data="{StaticResource Icon.Drop}"
+                                          Fill="{DynamicResource Brush.AccentText}"
+                                          Width="15" Height="15"
+                                          Stretch="Uniform"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Drag and drop any file here to test your rules"
+                                               Style="{StaticResource Text.CardTitle}"/>
+                                    <TextBlock Text="Inspect matched rule, resolved variables, step trace, and predicted destination path."
+                                               Style="{StaticResource Text.Muted}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Sample File Input + Controls -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="6"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Style="{StaticResource ModernTextBoxStyle}"
+                                     Text="{Binding PipelinePreviewVM.SampleFilePath, UpdateSourceTrigger=PropertyChanged}"
+                                     Tag="Paste or drop a sample file path..."
+                                     AutomationProperties.AutomationId="SimulatorSamplePathInput"
+                                     AutomationProperties.Name="Sample File Path"/>
+
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding PipelinePreviewVM.PickSampleFileCommand}"
+                                    Content="Browse Sample..."
+                                    AutomationProperties.AutomationId="SimulatorBrowseSampleButton"
+                                    AutomationProperties.Name="Browse Sample File"/>
+
+                            <Button Grid.Column="4"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding PipelinePreviewVM.RunSimulationCommand}"
+                                    Content="Simulate"
+                                    AutomationProperties.AutomationId="SimulatorRunButton"
+                                    AutomationProperties.Name="Run Pipeline Simulation"/>
+
+                            <Button Grid.Column="6"
+                                    Style="{StaticResource GhostButtonStyle}"
+                                    Command="{Binding PipelinePreviewVM.ClearSimulationCommand}"
+                                    Content="Clear"
+                                    AutomationProperties.AutomationId="SimulatorClearButton"
+                                    AutomationProperties.Name="Clear Simulation"/>
+                        </Grid>
+
+                        <!-- Idle Prompt when no report -->
+                        <Border Visibility="{Binding PipelinePreviewVM.HasReport, Converter={StaticResource InverseBoolToVis}}"
+                                Background="{DynamicResource Brush.Well}"
+                                BorderBrush="{DynamicResource Brush.Divider}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.Md}"
+                                Padding="16">
+                            <TextBlock Text="{Binding PipelinePreviewVM.SummaryHeadline}"
+                                       Style="{StaticResource Text.Secondary}"
+                                       TextWrapping="Wrap"/>
+                        </Border>
+
+                        <!-- Simulation Report Results -->
+                        <StackPanel Visibility="{Binding PipelinePreviewVM.HasReport, Converter={StaticResource BoolToVis}}"
+                                    AutomationProperties.AutomationId="SimulatorResultsPanel">
+
+                            <!-- Verdict Header & Matched Rule Pill -->
+                            <Border Padding="14,12"
+                                    CornerRadius="{StaticResource Radius.Md}"
+                                    BorderThickness="1"
+                                    Margin="0,0,0,12">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Background" Value="{DynamicResource Brush.Well}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding PipelinePreviewVM.HasMatch}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.AccentBorder}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding PipelinePreviewVM.WouldDeleteOrRecycle}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource Brush.DangerSubtle}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                        <TextBlock Text="{Binding PipelinePreviewVM.SummaryHeadline}"
+                                                   Style="{StaticResource Text.Body}"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="Destructive warning: this pipeline sends the file to Recycle Bin or permanently deletes it."
+                                                   Visibility="{Binding PipelinePreviewVM.WouldDeleteOrRecycle, Converter={StaticResource BoolToVis}}"
+                                                   Style="{StaticResource Text.Secondary}"
+                                                   Foreground="{DynamicResource Brush.DangerText}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1"
+                                            Visibility="{Binding PipelinePreviewVM.HasMatch, Converter={StaticResource BoolToVis}}"
+                                            Style="{StaticResource BadgeBorderStyle}"
+                                            VerticalAlignment="Top">
+                                        <TextBlock Text="{Binding PipelinePreviewVM.MatchedRuleName}"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Brush.AccentText}"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <!-- Before -> After Path Diff -->
+                            <Border Visibility="{Binding PipelinePreviewVM.HasMatch, Converter={StaticResource BoolToVis}}"
+                                    Style="{StaticResource WellBorderStyle}"
+                                    Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="PREDICTED PATH DIFF"
+                                               Style="{StaticResource Text.Caption}"
+                                               Margin="0,0,0,8"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="52"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Before" Style="{StaticResource Text.Muted}" VerticalAlignment="Top"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding PipelinePreviewVM.BeforePathDisplay}"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   TextWrapping="Wrap"/>
+                                    </Grid>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="52"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top">
+                                            <Path Data="{StaticResource Icon.ArrowRight}"
+                                                  Fill="{DynamicResource Brush.AccentText}"
+                                                  Width="11" Height="11"
+                                                  Stretch="Uniform"
+                                                  Margin="0,3,5,0"
+                                                  VerticalAlignment="Top"/>
+                                            <TextBlock Text="After" Style="{StaticResource Text.Muted}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding PipelinePreviewVM.AfterPathDisplay}"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   Foreground="{DynamicResource Brush.AccentText}"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Step-by-Step Simulated Trace -->
+                            <StackPanel Visibility="{Binding PipelinePreviewVM.MatchedSteps.Count, Converter={StaticResource NonZeroCountToVis}}"
+                                        Margin="0,0,0,12">
+                                <TextBlock Text="SIMULATED STEP TRACE"
+                                           Style="{StaticResource Text.Caption}"
+                                           Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding PipelinePreviewVM.MatchedSteps}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource Brush.Well}"
+                                                    BorderBrush="{DynamicResource Brush.Divider}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="{StaticResource Radius.Md}"
+                                                    Padding="10,8"
+                                                    Margin="0,0,0,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Border Grid.Column="0"
+                                                            Width="26" Height="26"
+                                                            CornerRadius="{StaticResource Radius.Sm}"
+                                                            Background="{DynamicResource Brush.Surface}"
+                                                            BorderBrush="{DynamicResource Brush.Border}"
+                                                            BorderThickness="1"
+                                                            VerticalAlignment="Top"
+                                                            Margin="0,0,10,0">
+                                                        <Path Data="{Binding StepType, Converter={StaticResource StepTypeToIconKey}}"
+                                                              Fill="{DynamicResource Brush.AccentText}"
+                                                              Width="13" Height="13"
+                                                              Stretch="Uniform"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding StepName}"
+                                                                   Style="{StaticResource Text.CardTitle}"/>
+                                                        <TextBlock Text="{Binding Details}"
+                                                                   Style="{StaticResource Text.Secondary}"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,2,0,0"/>
+                                                        <TextBlock Text="{Binding AfterPath}"
+                                                                   Visibility="{Binding AfterPath, Converter={StaticResource StringNotEmptyToVis}}"
+                                                                   Style="{StaticResource Text.Mono}"
+                                                                   FontSize="11.5"
+                                                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- Resolved Template Variables -->
+                            <StackPanel Visibility="{Binding PipelinePreviewVM.ResolvedVariables.Count, Converter={StaticResource NonZeroCountToVis}}"
+                                        Margin="0,0,0,14">
+                                <TextBlock Text="RESOLVED TEMPLATE VARIABLES"
+                                           Style="{StaticResource Text.Caption}"
+                                           Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding PipelinePreviewVM.ResolvedVariables}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource Brush.Well}"
+                                                    BorderBrush="{DynamicResource Brush.Border}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="{StaticResource Radius.Sm}"
+                                                    Padding="8,4"
+                                                    Margin="0,0,6,6">
+                                                <TextBlock Style="{StaticResource Text.Mono}" FontSize="11.5">
+                                                    <Run Text="{Binding Key, Mode=OneWay}" Foreground="{DynamicResource Brush.AccentText}"/>
+                                                    <Run Text=" = " Foreground="{DynamicResource Brush.TextMuted}"/>
+                                                    <Run Text="{Binding Value, Mode=OneWay}" Foreground="{DynamicResource Brush.TextPrimary}"/>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- Execute Live Action -->
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Visibility="{Binding PipelinePreviewVM.HasMatch, Converter={StaticResource BoolToVis}}">
+                                <Button Style="{StaticResource SimulatorExecuteButtonStyle}"
+                                        Command="{Binding PipelinePreviewVM.ExecuteSampleLiveCommand}"
+                                        AutomationProperties.AutomationId="SimulatorExecuteLiveButton"
+                                        AutomationProperties.Name="Execute Live on This File">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource Icon.Play}"
+                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                              Width="12" Height="12"
+                                              Stretch="Uniform"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"/>
+                                        <TextBlock Text="Execute Live on This File" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- RIGHT COLUMN: Engine Quick Card + Active Rules Quick Toggle -->
+                <StackPanel Grid.Column="2">
+
+                    <!-- Engine & Scan Quick Card -->
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            Padding="20"
+                            Margin="0,0,0,16"
+                            AutomationProperties.AutomationId="EngineStatusCard"
+                            AutomationProperties.Name="Monitoring Engine and Quick Scan">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="Monitoring Engine"
+                                           Style="{StaticResource Text.SectionTitle}"
+                                           VerticalAlignment="Center"/>
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource Brush.Well}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource Radius.Pill}"
+                                        Padding="10,4">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse Width="8" Height="8"
+                                                 Fill="{Binding DashboardVM.IsMonitoring, Converter={StaticResource BoolToStatusBrush}}"
+                                                 Margin="0,0,7,0"
+                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding DashboardVM.StatusText}"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Button Command="{Binding ScanMonitoredFoldersAsyncCommand}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,0,8"
+                                    AutomationProperties.AutomationId="OverviewScanMonitoredButton"
+                                    AutomationProperties.Name="Scan Monitored Folders">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{StaticResource Icon.Scan}"
+                                          Fill="{DynamicResource Brush.TextOnAccent}"
+                                          Width="14" Height="14"
+                                          Stretch="Uniform"
+                                          Margin="0,0,8,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Scan Monitored Folders" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        Command="{Binding DashboardVM.ToggleMonitoringCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        HorizontalContentAlignment="Center"
+                                        AutomationProperties.AutomationId="OverviewToggleMonitoringButton"
+                                        AutomationProperties.Name="Toggle Folder Monitoring">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Width="12" Height="12"
+                                              Stretch="Uniform"
+                                              Fill="{DynamicResource Brush.TextPrimary}"
+                                              Margin="0,0,7,0"
+                                              VerticalAlignment="Center">
+                                            <Path.Style>
+                                                <Style TargetType="{x:Type Path}">
+                                                    <Setter Property="Data" Value="{StaticResource Icon.Pause}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DashboardVM.IsMonitoring}" Value="False">
+                                                            <Setter Property="Data" Value="{StaticResource Icon.Play}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
+                                        <TextBlock Text="{Binding DashboardVM.ToggleMonitoringButtonText}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="2"
+                                        Command="{Binding DashboardVM.ScanCustomFolderCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        HorizontalContentAlignment="Center"
+                                        AutomationProperties.AutomationId="OverviewBrowseCustomFolderButton"
+                                        AutomationProperties.Name="Browse Custom Folder to Scan">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="{StaticResource Icon.Folder}"
+                                              Fill="{DynamicResource Brush.TextPrimary}"
+                                              Width="13" Height="13"
+                                              Stretch="Uniform"
+                                              Margin="0,0,7,0"
+                                              VerticalAlignment="Center"/>
+                                        <TextBlock Text="Browse Custom Folder..." VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Active Rules Quick Toggle Card -->
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            Padding="20"
+                            AutomationProperties.AutomationId="QuickRulesCard"
+                            AutomationProperties.Name="Active Rules Quick Toggle">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Priority Rules"
+                                               Style="{StaticResource Text.SectionTitle}"
+                                               VerticalAlignment="Center"/>
+                                    <Border Style="{StaticResource BadgeBorderStyle}" Margin="10,0,0,0">
+                                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.AccentText}">
+                                            <Run Text="{Binding DashboardVM.ActiveRulesCount, Mode=OneWay}"/>
+                                            <Run Text=" active"/>
+                                        </TextBlock>
+                                    </Border>
+                                </StackPanel>
+                                <Button Grid.Column="1"
+                                        Style="{StaticResource GhostButtonStyle}"
+                                        Command="{Binding NavigateCommand}"
+                                        CommandParameter="Rules"
+                                        Content="Manage All"
+                                        AutomationProperties.AutomationId="QuickRulesManageAllButton"
+                                        AutomationProperties.Name="Manage All Rules"/>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding DashboardVM.QuickRules}"
+                                          Visibility="{Binding DashboardVM.QuickRules.Count, Converter={StaticResource NonZeroCountToVis}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Brush.Well}"
+                                                BorderBrush="{DynamicResource Brush.Divider}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.Md}"
+                                                Padding="10,8"
+                                                Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0"
+                                                        Background="{DynamicResource Brush.AccentSubtle}"
+                                                        BorderBrush="{DynamicResource Brush.AccentBorder}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="{StaticResource Radius.Sm}"
+                                                        MinWidth="24"
+                                                        Height="22"
+                                                        Padding="5,0"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding Priority}"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Brush.AccentText}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               Style="{StaticResource Text.CardTitle}"/>
+                                                    <TextBlock Text="{Binding SummaryText}"
+                                                               Style="{StaticResource Text.Muted}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+
+                                                <CheckBox Grid.Column="2"
+                                                          Style="{StaticResource SwitchCheckBoxStyle}"
+                                                          IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                                          VerticalAlignment="Center"
+                                                          AutomationProperties.Name="{Binding Name}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Empty state when no rules exist -->
+                            <Border Visibility="{Binding DashboardVM.QuickRules.Count, Converter={StaticResource ZeroCountToVis}}"
+                                    Style="{StaticResource WellBorderStyle}"
+                                    Padding="16">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="No automation rules configured yet."
+                                               Style="{StaticResource Text.Secondary}"
+                                               HorizontalAlignment="Center"/>
+                                    <Button Style="{StaticResource SecondaryButtonStyle}"
+                                            Command="{Binding NavigateCommand}"
+                                            CommandParameter="Rules"
+                                            Content="Open Rules Builder"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,10,0,0"
+                                            AutomationProperties.AutomationId="QuickRulesEmptyOpenBuilderButton"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- 4. REAL-TIME ACTIVITY FEED CARD -->
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Padding="20"
+                    AutomationProperties.AutomationId="RecentActivityCard"
+                    AutomationProperties.Name="Real-Time Activity Feed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Data="{StaticResource Icon.History}"
+                                  Fill="{DynamicResource Brush.AccentText}"
+                                  Width="15" Height="15"
+                                  Stretch="Uniform"
+                                  Margin="0,0,10,0"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock Text="Real-Time Activity Feed"
+                                       Style="{StaticResource Text.SectionTitle}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Style="{StaticResource GhostButtonStyle}"
+                                    Command="{Binding NavigateCommand}"
+                                    CommandParameter="Logs"
+                                    Content="Open Full Logs"
+                                    Margin="0,0,8,0"
+                                    AutomationProperties.AutomationId="OpenFullLogsButton"
+                                    AutomationProperties.Name="Open Full Logs"/>
+                            <Button Style="{StaticResource GhostButtonStyle}"
+                                    Command="{Binding DashboardVM.ClearActivityCommand}"
+                                    Content="Clear Feed"
+                                    AutomationProperties.AutomationId="ClearActivityFeedButton"
+                                    AutomationProperties.Name="Clear Activity Feed"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Populated Feed Table -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding DashboardVM.RecentActivity}"
+                              Visibility="{Binding DashboardVM.RecentActivity.Count, Converter={StaticResource NonZeroCountToVis}}"
+                              IsReadOnly="True"
+                              MaxHeight="320"
+                              MinHeight="150"
+                              AutomationProperties.AutomationId="RecentActivityGrid"
+                              AutomationProperties.Name="Recent Activity Events">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time"
+                                                Binding="{Binding Timestamp, StringFormat=HH:mm:ss}"
+                                                Width="88"
+                                                ElementStyle="{StaticResource DataGridCellTextStyle}"/>
+                            <DataGridTemplateColumn Header="Level" Width="96">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding Level, Converter={StaticResource LogLevelToBg}}"
+                                                CornerRadius="{StaticResource Radius.Pill}"
+                                                Padding="8,2"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Level}"
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding Level, Converter={StaticResource LogLevelToFg}}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Rule"
+                                                Binding="{Binding RuleName}"
+                                                Width="180"
+                                                ElementStyle="{StaticResource DataGridCellTextStyle}"/>
+                            <DataGridTextColumn Header="Details"
+                                                Binding="{Binding Details}"
+                                                Width="*"
+                                                ElementStyle="{StaticResource DataGridCellTextStyle}"/>
+                            <DataGridTextColumn Header="Duration"
+                                                Binding="{Binding DurationMs, StringFormat={}{0} ms}"
+                                                Width="86"
+                                                ElementStyle="{StaticResource DataGridCellTextStyle}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Idle Empty State -->
+                    <Border Grid.Row="1"
+                            Visibility="{Binding DashboardVM.RecentActivity.Count, Converter={StaticResource ZeroCountToVis}}"
+                            Style="{StaticResource WellBorderStyle}"
+                            Padding="24,20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="No recent file activity yet"
+                                       Style="{StaticResource Text.CardTitle}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="New file events, rule matches, and manual folder scans will appear here live."
+                                       Style="{StaticResource Text.Muted}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
